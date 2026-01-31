@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>股票倉位計算器</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); min-height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    const STORAGE_KEY = 'stock-trades-v3';
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('calculator');
+      const [capital, setCapital] = useState('128000');
+      const [buyPrice, setBuyPrice] = useState('');
+      const [stopLoss, setStopLoss] = useState('');
+      const [maxLossPercent, setMaxLossPercent] = useState('0.5');
+      const [stopLossType, setStopLossType] = useState('price');
+      const [stopLossPercent, setStopLossPercent] = useState('');
+      const [targetPrice, setTargetPrice] = useState('');
+      const [symbol, setSymbol] = useState('');
+      const [trades, setTrades] = useState([]);
+      const [editingTrade, setEditingTrade] = useState(null);
+      const [trailingStopInput, setTrailingStopInput] = useState('');
+      const [closingTrade, setClosingTrade] = useState(null);
+      const [exitPriceInput, setExitPriceInput] = useState('');
+      const [prices, setPrices] = useState({});
+      const [loadingPrices, setLoadingPrices] = useState(false);
+      const [priceError, setPriceError] = useState('');
+
+      useEffect(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) setTrades(JSON.parse(saved));
+      }, []);
+
+      const saveTrades = (newTrades) => {
+        setTrades(newTrades);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newTrades));
+      };
+
+      const fetchPrices = async () => {
+        const openTrades = trades.filter(t => t.status === 'open');
+        if (openTrades.length === 0) return;
+        
+        setLoadingPrices(true);
+        setPriceError('');
+        
+        try {
+          const symbols = openTrades.map(t => t.symbol).join(',');
+          const response = await fetch(`/api/quotes?symbols=${symbols}`);
+          const data = await response.json();
+          
+          if (data.error) {
+            setPriceError(data.error);
+          } else {
+            const newPrices = {};
+            for (const [sym, quote] of Object.entries(data)) {
+              if (quote.c && quote.c > 0) {
+                newPrices[sym] = { price: quote.c, change: quote.d, changePercent: quote.dp, updatedAt: new Date().toISOString() };
+              }
+            }
+            setPrices(newPrices);
+          }
+        } catch (e) {
+          setPriceError(`錯誤: ${e.message}`);
+        }
+        setLoadingPrices(false);
+      };
+
+      useEffect(() => {
+        if (activeTab === 'trades' && trades.filter(t => t.status === 'open').length > 0) {
+          fetchPrices();
+          const interval = setInterval(fetchPrices, 60000);
+          return () => clearInterval(interval);
+        }
+      }, [activeTab, trades.length]);
+
+      const calculation = useMemo(() => {
+        const capitalNum = parseFloat(capital);
+        const buyPriceNum = parseFloat(buyPrice);
+        const maxLossPercentNum = parseFloat(maxLossPercent);
+        const targetPriceNum = parseFloat(targetPrice);
+
+        let stopLossNum;
+        if (stopLossType === 'percent') {
+          const slPercent = parseFloat(stopLossPercent);
+          if (!slPercent || !buyPriceNum) return null;
+          stopLossNum = buyPriceNum * (1 - slPercent / 100);
+        } else {
+          stopLossNum = parseFloat(stopLoss);
+        }
+
+        if (!capitalNum || !buyPriceNum || !stopLossNum || !maxLossPercentNum) return null;
+        if (stopLossNum >= buyPriceNum) return { error: '止損價必須低於買入價' };
+
+        const riskPerShare = buyPriceNum - stopLossNum;
+        const stopLossPercentage = (riskPerShare / buyPriceNum) * 100;
+        const maxLossAmount = capitalNum * (maxLossPercentNum / 100);
+        const totalShares = Math.floor(maxLossAmount / riskPerShare);
+        const requiredCapital = totalShares * buyPriceNum;
+        const actualRisk = totalShares * riskPerShare;
+        const actualRiskPercent = (actualRisk / capitalNum) * 100;
+        const capitalUsagePercent = (requiredCapital / capitalNum) * 100;
+
+        let riskRewardRatio = null, potentialProfit = null, targetGainPercent = null;
+        if (targetPriceNum && targetPriceNum > buyPriceNum) {
+          const profitPerShare = targetPriceNum - buyPriceNum;
+          riskRewardRatio = profitPerShare / riskPerShare;
+          potentialProfit = totalShares * profitPerShare;
+          targetGainPercent = (profitPerShare / buyPriceNum) * 100;
+        }
+
+        return { shares: totalShares, riskPerShare, stopLossPercentage, maxLossAmount, requiredCapital, actualRisk, actualRiskPercent, capitalUsagePercent, canAfford: requiredCapital <= capitalNum, actualStopLoss: stopLossNum, riskRewardRatio, potentialProfit, targetGainPercent };
+      }, [capital, buyPrice, stopLoss, stopLossType, stopLossPercent, maxLossPercent, targetPrice]);
+
+      const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+      const formatPercent = (num) => `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`;
+
+      const addToTrades = () => {
+        if (!calculation || calculation.error || !symbol.trim()) return;
+        const newTrade = {
+          id: Date.now(), symbol: symbol.toUpperCase(), entryPrice: parseFloat(buyPrice), shares: calculation.shares,
+          initialStopLoss: calculation.actualStopLoss, currentStopLoss: calculation.actualStopLoss,
+          targetPrice: parseFloat(targetPrice) || null, status: 'open', riskAmount: calculation.actualRisk,
+          createdAt: new Date().toISOString(),
+          stopLossHistory: [{ price: calculation.actualStopLoss, date: new Date().toISOString(), note: '初始止損' }]
+        };
+        saveTrades([newTrade, ...trades]);
+        setActiveTab('trades');
+        setSymbol(''); setBuyPrice(''); setStopLoss(''); setStopLossPercent(''); setTargetPrice('');
+      };
+
+      const updateTrailingStop = (tradeId) => {
+        const newStopLoss = parseFloat(trailingStopInput);
+        if (!newStopLoss) return;
+        const newTrades = trades.map(t => {
+          if (t.id === tradeId) {
+            const isRiskFree = newStopLoss >= t.entryPrice;
+            return { ...t, currentStopLoss: newStopLoss, stopLossHistory: [...t.stopLossHistory, { price: newStopLoss, date: new Date().toISOString(), note: isRiskFree ? '✅ Risk Free!' : '推高止損' }] };
+          }
+          return t;
+        });
+        saveTrades(newTrades);
+        setEditingTrade(null);
+        setTrailingStopInput('');
+      };
+
+      const closeTrade = (tradeId) => {
+        const exitPrice = parseFloat(exitPriceInput);
+        if (!exitPrice) return;
+        const newTrades = trades.map(t => {
+          if (t.id === tradeId) {
+            const pnl = (exitPrice - t.entryPrice) * t.shares;
+            return { ...t, status: 'closed', exitPrice, pnl, closedAt: new Date().toISOString() };
+          }
+          return t;
+        });
+        saveTrades(newTrades);
+        setClosingTrade(null);
+        setExitPriceInput('');
+      };
+
+      const deleteTrade = (tradeId) => saveTrades(trades.filter(t => t.id !== tradeId));
+
+      const getTradeMetrics = (trade) => {
+        const priceData = prices[trade.symbol];
+        const currentPrice = priceData?.price;
+        const isRiskFree = trade.currentStopLoss >= trade.entryPrice;
+        let unrealizedPnL = null, unrealizedPnLPercent = null, currentRisk = null;
+        if (currentPrice) {
+          unrealizedPnL = (currentPrice - trade.entryPrice) * trade.shares;
+          unrealizedPnLPercent = ((currentPrice - trade.entryPrice) / trade.entryPrice) * 100;
+        }
+        currentRisk = isRiskFree ? (trade.currentStopLoss - trade.entryPrice) * trade.shares : (trade.entryPrice - trade.currentStopLoss) * trade.shares;
+        return { currentPrice, unrealizedPnL, unrealizedPnLPercent, currentRisk, isRiskFree };
+      };
+
+      return (
+        <div className="min-h-screen p-4">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold text-white mb-1">📈 股票倉位計算器</h1>
+              <p className="text-slate-400 text-sm">風險管理 · 止損追蹤 · 實時報價</p>
+            </div>
+
+            <div className="flex gap-2 mb-4">
+              <button onClick={() => setActiveTab('calculator')} className={`flex-1 py-3 rounded-xl font-medium transition ${activeTab === 'calculator' ? 'bg-blue-500 text-white' : 'bg-slate-800/50 text-slate-400'}`}>🧮 計算器</button>
+              <button onClick={() => setActiveTab('trades')} className={`flex-1 py-3 rounded-xl font-medium transition relative ${activeTab === 'trades' ? 'bg-blue-500 text-white' : 'bg-slate-800/50 text-slate-400'}`}>
+                📋 持倉
+                {trades.filter(t => t.status === 'open').length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{trades.filter(t => t.status === 'open').length}</span>}
+              </button>
+            </div>
+
+            {activeTab === 'calculator' && (
+              <div className="bg-slate-800/50 rounded-2xl p-5 border border-slate-700">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-slate-300 text-sm font-medium mb-2">🏷️ 股票代號</label>
+                    <input type="text" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL, TSLA, NVDA" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 text-sm font-medium mb-2">💰 總本金</label>
+                      <input type="number" value={capital} onChange={(e) => setCapital(e.target.value)} className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 text-sm font-medium mb-2">⚠️ 最大虧損 %</label>
+                      <input type="number" value={maxLossPercent} onChange={(e) => setMaxLossPercent(e.target.value)} step="0.1" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 text-sm font-medium mb-2">🎯 買入價</label>
+                      <input type="number" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} placeholder="150.00" step="0.01" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 text-sm font-medium mb-2">🎯 目標價</label>
+                      <input type="number" value={targetPrice} onChange={(e) => setTargetPrice(e.target.value)} placeholder="選填" step="0.01" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 text-sm font-medium mb-2">🛑 止損</label>
+                    <div className="flex gap-2 mb-2">
+                      <button onClick={() => setStopLossType('price')} className={`flex-1 py-2 rounded-lg text-sm font-medium ${stopLossType === 'price' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>價格</button>
+                      <button onClick={() => setStopLossType('percent')} className={`flex-1 py-2 rounded-lg text-sm font-medium ${stopLossType === 'percent' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>百分比</button>
+                    </div>
+                    {stopLossType === 'price' ? (
+                      <input type="number" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="止損價" step="0.01" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    ) : (
+                      <div className="relative">
+                        <input type="number" value={stopLossPercent} onChange={(e) => setStopLossPercent(e.target.value)} placeholder="5" step="0.1" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 pr-10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">%</span>
+                      </div>
+                    )}
+                    {stopLossType === 'percent' && buyPrice && stopLossPercent && <p className="text-slate-400 text-xs mt-1">= {formatCurrency(parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100))}</p>}
+                  </div>
+                </div>
+
+                {calculation && (
+                  <div className="mt-5 pt-5 border-t border-slate-700">
+                    {calculation.error ? (
+                      <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-red-300 text-center">❌ {calculation.error}</div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-4 text-center">
+                          <p className="text-green-300 text-sm">建議買入</p>
+                          <p className="text-4xl font-bold text-white">{calculation.shares} 股</p>
+                          <p className="text-slate-400 text-sm mt-1">需 {formatCurrency(calculation.requiredCapital)} ({calculation.capitalUsagePercent.toFixed(1)}%)</p>
+                        </div>
+                        {calculation.riskRewardRatio && (
+                          <div className={`rounded-xl p-3 text-center ${calculation.riskRewardRatio >= 2 ? 'bg-emerald-500/20 border border-emerald-500/30' : calculation.riskRewardRatio >= 1 ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-red-500/20 border border-red-500/30'}`}>
+                            <p className="text-slate-300 text-sm">R:R</p>
+                            <p className="text-2xl font-bold text-white">1 : {calculation.riskRewardRatio.toFixed(2)}</p>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-slate-700/30 rounded-xl p-3 text-center">
+                            <p className="text-slate-400 text-xs">止損價</p>
+                            <p className="text-white font-semibold">{formatCurrency(calculation.actualStopLoss)}</p>
+                            <p className="text-red-400 text-xs">-{calculation.stopLossPercentage.toFixed(1)}%</p>
+                          </div>
+                          <div className="bg-slate-700/30 rounded-xl p-3 text-center">
+                            <p className="text-slate-400 text-xs">風險金額</p>
+                            <p className="text-white font-semibold">{formatCurrency(calculation.actualRisk)}</p>
+                            <p className="text-slate-400 text-xs">{calculation.actualRiskPercent.toFixed(2)}% 本金</p>
+                          </div>
+                        </div>
+                        {calculation.potentialProfit && (
+                          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
+                            <p className="text-emerald-300 text-xs">潛在盈利</p>
+                            <p className="text-white font-bold text-lg">{formatCurrency(calculation.potentialProfit)}</p>
+                            <p className="text-emerald-400 text-xs">+{calculation.targetGainPercent.toFixed(1)}%</p>
+                          </div>
+                        )}
+                        <button onClick={addToTrades} disabled={!symbol.trim()} className={`w-full py-3 rounded-xl font-medium transition ${symbol.trim() ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}>📋 加入持倉</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'trades' && (
+              <div className="space-y-4">
+                {trades.filter(t => t.status === 'open').length > 0 && (
+                  <div className="space-y-2">
+                    <button onClick={fetchPrices} disabled={loadingPrices} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl py-2 text-slate-300 text-sm hover:bg-slate-700/50 transition">
+                      {loadingPrices ? '⏳ 更新中...' : '🔄 更新報價'}
+                    </button>
+                    {priceError && <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3 text-red-300 text-sm">❌ {priceError}</div>}
+                  </div>
+                )}
+
+                {trades.length === 0 ? (
+                  <div className="bg-slate-800/50 rounded-2xl p-8 text-center border border-slate-700">
+                    <p className="text-slate-400">暫無持倉記錄</p>
+                    <p className="text-slate-500 text-sm mt-1">喺計算器加入新交易</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-slate-800/50 rounded-xl p-3 text-center border border-slate-700">
+                        <p className="text-slate-400 text-xs">持倉</p>
+                        <p className="text-white font-bold text-lg">{trades.filter(t => t.status === 'open').length}</p>
+                      </div>
+                      <div className="bg-emerald-500/10 rounded-xl p-3 text-center border border-emerald-500/30">
+                        <p className="text-emerald-300 text-xs">Risk Free</p>
+                        <p className="text-white font-bold text-lg">{trades.filter(t => t.status === 'open' && t.currentStopLoss >= t.entryPrice).length}</p>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-xl p-3 text-center border border-slate-700">
+                        <p className="text-slate-400 text-xs">已平倉</p>
+                        <p className="text-white font-bold text-lg">{trades.filter(t => t.status === 'closed').length}</p>
+                      </div>
+                    </div>
+
+                    {trades.map((trade) => {
+                      const metrics = trade.status === 'open' ? getTradeMetrics(trade) : null;
+                      const isEditing = editingTrade === trade.id;
+                      const isClosing = closingTrade === trade.id;
+                      
+                      return (
+                        <div key={trade.id} className={`bg-slate-800/50 rounded-2xl p-4 border ${trade.status === 'closed' ? (trade.pnl >= 0 ? 'border-green-500/50' : 'border-red-500/50') : metrics?.isRiskFree ? 'border-emerald-500/50' : 'border-slate-700'}`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-white font-bold text-xl">{trade.symbol}</span>
+                              {trade.status === 'open' && metrics?.isRiskFree && <span className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-1 rounded-full">✅ Risk Free</span>}
+                              {trade.status === 'closed' && <span className={`text-xs px-2 py-1 rounded-full ${trade.pnl >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>已平倉</span>}
+                            </div>
+                            <button onClick={() => deleteTrade(trade.id)} className="text-slate-500 hover:text-red-400 text-sm">🗑️</button>
+                          </div>
+
+                          {trade.status === 'open' && metrics?.currentPrice && (
+                            <div className={`rounded-xl p-3 mb-3 ${metrics.unrealizedPnL >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-slate-400 text-xs">現價</p>
+                                  <p className="text-white font-bold text-2xl">{formatCurrency(metrics.currentPrice)}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-slate-400 text-xs">未實現盈虧</p>
+                                  <p className={`font-bold text-xl ${metrics.unrealizedPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(metrics.unrealizedPnL)}</p>
+                                  <p className={`text-sm ${metrics.unrealizedPnLPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(metrics.unrealizedPnLPercent)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                            <div className="bg-slate-700/30 rounded-lg p-2">
+                              <p className="text-slate-400 text-xs">入場價</p>
+                              <p className="text-white font-medium">{formatCurrency(trade.entryPrice)}</p>
+                            </div>
+                            <div className="bg-slate-700/30 rounded-lg p-2">
+                              <p className="text-slate-400 text-xs">股數</p>
+                              <p className="text-white font-medium">{trade.shares}</p>
+                            </div>
+                            <div className="bg-slate-700/30 rounded-lg p-2">
+                              <p className="text-slate-400 text-xs">初始止損</p>
+                              <p className="text-white font-medium">{formatCurrency(trade.initialStopLoss)}</p>
+                            </div>
+                          </div>
+
+                          {trade.status === 'open' && (
+                            <div className={`rounded-xl p-3 mb-3 ${metrics?.isRiskFree ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-slate-700/30'}`}>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-slate-400 text-xs">現時止損</p>
+                                  <p className="text-white font-bold text-lg">{formatCurrency(trade.currentStopLoss)}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-slate-400 text-xs">{metrics?.isRiskFree ? '保證利潤' : '風險金額'}</p>
+                                  <p className={`font-bold ${metrics?.isRiskFree ? 'text-emerald-400' : 'text-red-400'}`}>{metrics?.isRiskFree ? '+' : '-'}{formatCurrency(Math.abs(metrics?.currentRisk || 0))}</p>
+                                </div>
+                              </div>
+                              {!metrics?.isRiskFree && (
+                                <div className="mt-2">
+                                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                                    <span>→ Risk Free</span>
+                                    <span>{formatCurrency(trade.entryPrice - trade.currentStopLoss)}</span>
+                                  </div>
+                                  <div className="w-full bg-slate-600 rounded-full h-1.5">
+                                    <div className="bg-gradient-to-r from-yellow-500 to-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.max(0, Math.min(100, ((trade.currentStopLoss - trade.initialStopLoss) / (trade.entryPrice - trade.initialStopLoss)) * 100))}%` }} />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {trade.status === 'closed' && (
+                            <div className={`rounded-xl p-3 mb-3 ${trade.pnl >= 0 ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-slate-400 text-xs">平倉價</p>
+                                  <p className="text-white font-bold">{formatCurrency(trade.exitPrice)}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-slate-400 text-xs">盈虧</p>
+                                  <p className={`font-bold text-xl ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {trade.status === 'open' && (
+                            <div className="space-y-2">
+                              {isEditing ? (
+                                <div className="flex gap-2">
+                                  <input type="number" value={trailingStopInput} onChange={(e) => setTrailingStopInput(e.target.value)} placeholder="新止損價" step="0.01" className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                  <button onClick={() => updateTrailingStop(trade.id)} className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm">✓</button>
+                                  <button onClick={() => { setEditingTrade(null); setTrailingStopInput(''); }} className="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">✕</button>
+                                </div>
+                              ) : isClosing ? (
+                                <div className="flex gap-2">
+                                  <input type="number" value={exitPriceInput} onChange={(e) => setExitPriceInput(e.target.value)} placeholder="平倉價" step="0.01" className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                  <button onClick={() => closeTrade(trade.id)} className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm">✓</button>
+                                  <button onClick={() => { setClosingTrade(null); setExitPriceInput(''); }} className="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">✕</button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-2">
+                                  <button onClick={() => { setEditingTrade(trade.id); setTrailingStopInput(trade.currentStopLoss.toString()); }} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition">📈 更新止損</button>
+                                  <button onClick={() => setClosingTrade(trade.id)} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition">🏁 平倉</button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="mt-4 text-center text-slate-500 text-xs">報價來源：Finnhub · 每 60 秒自動更新</div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
