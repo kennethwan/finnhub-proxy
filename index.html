@@ -2,24 +2,58 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>股票倉位計算器</title>
+
+  <!-- PWA / iOS Safari -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-title" content="倉位計算器">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); min-height: 100vh; }
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      /* Prevent pull-to-refresh */
+      overscroll-behavior-y: contain;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    /* Prevent text selection on double-tap */
+    * {
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Allow text selection in inputs */
+    input, textarea {
+      -webkit-user-select: text;
+      user-select: text;
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useCallback } = React;
+
+    const SUPABASE_URL = 'https://ykdlifojtvejjvccjvcx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_rFGQ5h2Yq4GnApAZq9cTCQ_B84OgS9O';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const STORAGE_KEY = 'stock-trades-v3';
 
     function App() {
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
       const [activeTab, setActiveTab] = useState('calculator');
       const [capital, setCapital] = useState('128000');
       const [buyPrice, setBuyPrice] = useState('');
@@ -37,15 +71,197 @@
       const [prices, setPrices] = useState({});
       const [loadingPrices, setLoadingPrices] = useState(false);
       const [priceError, setPriceError] = useState('');
+      const [syncStatus, setSyncStatus] = useState('');
 
+      // Auth state listener
       useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) setTrades(JSON.parse(saved));
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setUser(session?.user ?? null);
+          setAuthLoading(false);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
       }, []);
 
-      const saveTrades = (newTrades) => {
+      const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [authError, setAuthError] = useState('');
+      const [showAuthModal, setShowAuthModal] = useState(false);
+
+      const handleAuth = async (e) => {
+        e.preventDefault();
+        setAuthError('');
+
+        try {
+          if (authMode === 'signup') {
+            const { error } = await supabase.auth.signUp({ email, password });
+            if (error) throw error;
+            setAuthError('註冊成功！請檢查你嘅 email 確認帳戶。');
+          } else {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            setShowAuthModal(false);
+            setEmail('');
+            setPassword('');
+          }
+        } catch (error) {
+          setAuthError(error.message);
+        }
+      };
+
+      const signOut = async () => {
+        await supabase.auth.signOut();
+        setTrades([]);
+      };
+
+      // Load trades from Supabase when user logs in
+      const loadTradesFromSupabase = useCallback(async () => {
+        if (!user) return;
+
+        setSyncStatus('載入中...');
+        try {
+          const { data, error } = await supabase
+            .from('trades')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          if (data) {
+            const formattedTrades = data.map(t => ({
+              id: t.id,
+              symbol: t.symbol,
+              entryPrice: t.entry_price,
+              shares: t.shares,
+              initialStopLoss: t.initial_stop_loss,
+              currentStopLoss: t.current_stop_loss,
+              targetPrice: t.target_price,
+              status: t.status,
+              riskAmount: t.risk_amount,
+              createdAt: t.created_at,
+              stopLossHistory: t.stop_loss_history || [],
+              exitPrice: t.exit_price,
+              pnl: t.pnl,
+              closedAt: t.closed_at
+            }));
+            setTrades(formattedTrades);
+          }
+          setSyncStatus('');
+        } catch (e) {
+          console.error('載入失敗:', e);
+          setSyncStatus('載入失敗');
+        }
+      }, [user]);
+
+      useEffect(() => {
+        if (user) {
+          loadTradesFromSupabase();
+        } else if (!authLoading) {
+          // Not logged in, load from localStorage
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) setTrades(JSON.parse(saved));
+        }
+      }, [user, authLoading, loadTradesFromSupabase]);
+
+      const saveTrades = async (newTrades) => {
         setTrades(newTrades);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newTrades));
+
+        if (!user) {
+          // Not logged in, save to localStorage
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(newTrades));
+          return;
+        }
+
+        // Logged in, save to Supabase
+        setSyncStatus('同步中...');
+      };
+
+      const saveTradeToSupabase = async (trade) => {
+        if (!user) return trade;
+
+        const dbTrade = {
+          user_id: user.id,
+          symbol: trade.symbol,
+          entry_price: trade.entryPrice,
+          shares: trade.shares,
+          initial_stop_loss: trade.initialStopLoss,
+          current_stop_loss: trade.currentStopLoss,
+          target_price: trade.targetPrice,
+          status: trade.status,
+          risk_amount: trade.riskAmount,
+          stop_loss_history: trade.stopLossHistory,
+          exit_price: trade.exitPrice || null,
+          pnl: trade.pnl || null,
+          closed_at: trade.closedAt || null
+        };
+
+        try {
+          const { data, error } = await supabase
+            .from('trades')
+            .insert(dbTrade)
+            .select()
+            .single();
+
+          if (error) throw error;
+          setSyncStatus('已同步');
+          setTimeout(() => setSyncStatus(''), 2000);
+          return { ...trade, id: data.id };
+        } catch (e) {
+          console.error('儲存失敗:', e);
+          setSyncStatus('同步失敗');
+          return trade;
+        }
+      };
+
+      const updateTradeInSupabase = async (trade) => {
+        if (!user) return;
+
+        try {
+          const { error } = await supabase
+            .from('trades')
+            .update({
+              current_stop_loss: trade.currentStopLoss,
+              stop_loss_history: trade.stopLossHistory,
+              status: trade.status,
+              exit_price: trade.exitPrice || null,
+              pnl: trade.pnl || null,
+              closed_at: trade.closedAt || null
+            })
+            .eq('id', trade.id)
+            .eq('user_id', user.id);
+
+          if (error) throw error;
+          setSyncStatus('已同步');
+          setTimeout(() => setSyncStatus(''), 2000);
+        } catch (e) {
+          console.error('更新失敗:', e);
+          setSyncStatus('同步失敗');
+        }
+      };
+
+      const deleteTradeFromSupabase = async (tradeId) => {
+        if (!user) return;
+
+        try {
+          const { error } = await supabase
+            .from('trades')
+            .delete()
+            .eq('id', tradeId)
+            .eq('user_id', user.id);
+
+          if (error) throw error;
+          setSyncStatus('已刪除');
+          setTimeout(() => setSyncStatus(''), 2000);
+        } catch (e) {
+          console.error('刪除失敗:', e);
+          setSyncStatus('刪除失敗');
+        }
       };
 
       const fetchPrices = async () => {
@@ -126,51 +342,75 @@
       const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
       const formatPercent = (num) => `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`;
 
-      const addToTrades = () => {
+      const addToTrades = async () => {
         if (!calculation || calculation.error || !symbol.trim()) return;
-        const newTrade = {
+        let newTrade = {
           id: Date.now(), symbol: symbol.toUpperCase(), entryPrice: parseFloat(buyPrice), shares: calculation.shares,
           initialStopLoss: calculation.actualStopLoss, currentStopLoss: calculation.actualStopLoss,
           targetPrice: parseFloat(targetPrice) || null, status: 'open', riskAmount: calculation.actualRisk,
           createdAt: new Date().toISOString(),
           stopLossHistory: [{ price: calculation.actualStopLoss, date: new Date().toISOString(), note: '初始止損' }]
         };
+
+        if (user) {
+          newTrade = await saveTradeToSupabase(newTrade);
+        }
+
         saveTrades([newTrade, ...trades]);
         setActiveTab('trades');
         setSymbol(''); setBuyPrice(''); setStopLoss(''); setStopLossPercent(''); setTargetPrice('');
       };
 
-      const updateTrailingStop = (tradeId) => {
+      const updateTrailingStop = async (tradeId) => {
         const newStopLoss = parseFloat(trailingStopInput);
         if (!newStopLoss) return;
+        let updatedTrade = null;
         const newTrades = trades.map(t => {
           if (t.id === tradeId) {
             const isRiskFree = newStopLoss >= t.entryPrice;
-            return { ...t, currentStopLoss: newStopLoss, stopLossHistory: [...t.stopLossHistory, { price: newStopLoss, date: new Date().toISOString(), note: isRiskFree ? '✅ Risk Free!' : '推高止損' }] };
+            updatedTrade = { ...t, currentStopLoss: newStopLoss, stopLossHistory: [...t.stopLossHistory, { price: newStopLoss, date: new Date().toISOString(), note: isRiskFree ? '✅ Risk Free!' : '推高止損' }] };
+            return updatedTrade;
           }
           return t;
         });
+
+        if (user && updatedTrade) {
+          await updateTradeInSupabase(updatedTrade);
+        }
+
         saveTrades(newTrades);
         setEditingTrade(null);
         setTrailingStopInput('');
       };
 
-      const closeTrade = (tradeId) => {
+      const closeTrade = async (tradeId) => {
         const exitPrice = parseFloat(exitPriceInput);
         if (!exitPrice) return;
+        let closedTrade = null;
         const newTrades = trades.map(t => {
           if (t.id === tradeId) {
             const pnl = (exitPrice - t.entryPrice) * t.shares;
-            return { ...t, status: 'closed', exitPrice, pnl, closedAt: new Date().toISOString() };
+            closedTrade = { ...t, status: 'closed', exitPrice, pnl, closedAt: new Date().toISOString() };
+            return closedTrade;
           }
           return t;
         });
+
+        if (user && closedTrade) {
+          await updateTradeInSupabase(closedTrade);
+        }
+
         saveTrades(newTrades);
         setClosingTrade(null);
         setExitPriceInput('');
       };
 
-      const deleteTrade = (tradeId) => saveTrades(trades.filter(t => t.id !== tradeId));
+      const deleteTrade = async (tradeId) => {
+        if (user) {
+          await deleteTradeFromSupabase(tradeId);
+        }
+        saveTrades(trades.filter(t => t.id !== tradeId));
+      };
 
       const getTradeMetrics = (trade) => {
         const priceData = prices[trade.symbol];
@@ -185,13 +425,84 @@
         return { currentPrice, unrealizedPnL, unrealizedPnLPercent, currentRisk, isRiskFree };
       };
 
+      // Sort trades: open first, then closed at bottom
+      const sortedTrades = useMemo(() => {
+        return [...trades].sort((a, b) => {
+          if (a.status === 'open' && b.status === 'closed') return -1;
+          if (a.status === 'closed' && b.status === 'open') return 1;
+          // Within same status, sort by date (newest first)
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+      }, [trades]);
+
+      if (authLoading) {
+        return (
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-white text-lg">載入中...</div>
+          </div>
+        );
+      }
+
       return (
         <div className="min-h-screen p-4">
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold text-white mb-1">📈 股票倉位計算器</h1>
               <p className="text-slate-400 text-sm">風險管理 · 止損追蹤 · 實時報價</p>
+              {/* Auth UI */}
+              <div className="mt-3">
+                {user ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-slate-400 text-sm">👤 {user.email}</span>
+                    {syncStatus && <span className="text-blue-400 text-xs">{syncStatus}</span>}
+                    <button onClick={signOut} className="text-slate-500 hover:text-red-400 text-sm transition">登出</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowAuthModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    🔐 登入 / 註冊
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Auth Modal */}
+            {showAuthModal && !user && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-white font-bold text-lg">{authMode === 'login' ? '登入' : '註冊'}</h2>
+                    <button onClick={() => { setShowAuthModal(false); setAuthError(''); }} className="text-slate-400 hover:text-white">✕</button>
+                  </div>
+
+                  <form onSubmit={handleAuth} className="space-y-4">
+                    <div>
+                      <label className="block text-slate-300 text-sm mb-1">Email</label>
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 text-sm mb-1">密碼</label>
+                      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+
+                    {authError && (
+                      <div className={`text-sm p-2 rounded ${authError.includes('成功') ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                        {authError}
+                      </div>
+                    )}
+
+                    <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-medium transition">
+                      {authMode === 'login' ? '登入' : '註冊'}
+                    </button>
+                  </form>
+
+                  <div className="mt-4 text-center">
+                    <button onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(''); }} className="text-slate-400 text-sm hover:text-white transition">
+                      {authMode === 'login' ? '未有帳戶？註冊' : '已有帳戶？登入'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2 mb-4">
               <button onClick={() => setActiveTab('calculator')} className={`flex-1 py-3 rounded-xl font-medium transition ${activeTab === 'calculator' ? 'bg-blue-500 text-white' : 'bg-slate-800/50 text-slate-400'}`}>🧮 計算器</button>
@@ -323,7 +634,7 @@
                       </div>
                     </div>
 
-                    {trades.map((trade) => {
+                    {sortedTrades.map((trade) => {
                       const metrics = trade.status === 'open' ? getTradeMetrics(trade) : null;
                       const isEditing = editingTrade === trade.id;
                       const isClosing = closingTrade === trade.id;
