@@ -1,0 +1,17 @@
+{
+  "name": "finnhub-proxy",
+  "version": "1.0.0",
+  "description": "Stock calculator with Finnhub proxy",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
