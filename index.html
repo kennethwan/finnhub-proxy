@@ -98,6 +98,7 @@
       const [closingTrade, setClosingTrade] = useState(null);
       const [exitPriceInput, setExitPriceInput] = useState('');
       const [prices, setPrices] = useState({});
+      const [currency, setCurrency] = useState(() => localStorage.getItem('display-currency') || 'USD');
       const [loadingPrices, setLoadingPrices] = useState(false);
       const [priceError, setPriceError] = useState('');
       const [syncStatus, setSyncStatus] = useState('');
@@ -368,7 +369,20 @@
         return { shares: totalShares, riskPerShare, stopLossPercentage, maxLossAmount, requiredCapital, actualRisk, actualRiskPercent, capitalUsagePercent, canAfford: requiredCapital <= capitalNum, actualStopLoss: stopLossNum, riskRewardRatio, potentialProfit, targetGainPercent };
       }, [capital, buyPrice, stopLoss, stopLossType, stopLossPercent, maxLossPercent, targetPrice]);
 
-      const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+      const EXCHANGE_RATE_HKD_USD = 7.8;
+      const toggleCurrency = () => {
+        const next = currency === 'USD' ? 'HKD' : 'USD';
+        setCurrency(next);
+        localStorage.setItem('display-currency', next);
+      };
+      const formatCurrency = (num, fromCurrency) => {
+        const converted = fromCurrency === currency ? num
+          : fromCurrency === 'USD' && currency === 'HKD' ? num * EXCHANGE_RATE_HKD_USD
+          : fromCurrency === 'HKD' && currency === 'USD' ? num / EXCHANGE_RATE_HKD_USD
+          : num;
+        return new Intl.NumberFormat(currency === 'HKD' ? 'zh-HK' : 'en-US', { style: 'currency', currency }).format(converted);
+      };
+      const getSymbolCurrency = (sym) => sym && sym.endsWith('.HK') ? 'HKD' : 'USD';
       const formatPercent = (num) => `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`;
 
       const addToTrades = async () => {
@@ -539,6 +553,9 @@
                 📋 持倉
                 {trades.filter(t => t.status === 'open').length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{trades.filter(t => t.status === 'open').length}</span>}
               </button>
+              <button onClick={toggleCurrency} className="px-4 py-3 rounded-xl font-medium transition bg-slate-800/50 text-slate-300 border border-slate-700 hover:bg-slate-700/50 text-sm whitespace-nowrap">
+                {currency === 'USD' ? '🇺🇸 USD' : '🇭🇰 HKD'}
+              </button>
             </div>
 
             {activeTab === 'calculator' && (
@@ -582,7 +599,7 @@
                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">%</span>
                       </div>
                     )}
-                    {stopLossType === 'percent' && buyPrice && stopLossPercent && <p className="text-slate-400 text-xs mt-1">= {formatCurrency(parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100))}</p>}
+                    {stopLossType === 'percent' && buyPrice && stopLossPercent && <p className="text-slate-400 text-xs mt-1">= {formatCurrency(parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100), getSymbolCurrency(symbol))}</p>}
                   </div>
                 </div>
 
@@ -595,7 +612,7 @@
                         <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-4 text-center">
                           <p className="text-green-300 text-sm">建議買入</p>
                           <p className="text-4xl font-bold text-white">{calculation.shares} 股</p>
-                          <p className="text-slate-400 text-sm mt-1">需 {formatCurrency(calculation.requiredCapital)} ({calculation.capitalUsagePercent.toFixed(1)}%)</p>
+                          <p className="text-slate-400 text-sm mt-1">需 {formatCurrency(calculation.requiredCapital, getSymbolCurrency(symbol))} ({calculation.capitalUsagePercent.toFixed(1)}%)</p>
                         </div>
                         {calculation.riskRewardRatio && (
                           <div className={`rounded-xl p-3 text-center ${calculation.riskRewardRatio >= 2 ? 'bg-emerald-500/20 border border-emerald-500/30' : calculation.riskRewardRatio >= 1 ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-red-500/20 border border-red-500/30'}`}>
@@ -606,19 +623,19 @@
                         <div className="grid grid-cols-2 gap-3">
                           <div className="bg-slate-700/30 rounded-xl p-3 text-center">
                             <p className="text-slate-400 text-xs">止損價</p>
-                            <p className="text-white font-semibold">{formatCurrency(calculation.actualStopLoss)}</p>
+                            <p className="text-white font-semibold">{formatCurrency(calculation.actualStopLoss, getSymbolCurrency(symbol))}</p>
                             <p className="text-red-400 text-xs">-{calculation.stopLossPercentage.toFixed(1)}%</p>
                           </div>
                           <div className="bg-slate-700/30 rounded-xl p-3 text-center">
                             <p className="text-slate-400 text-xs">風險金額</p>
-                            <p className="text-white font-semibold">{formatCurrency(calculation.actualRisk)}</p>
+                            <p className="text-white font-semibold">{formatCurrency(calculation.actualRisk, getSymbolCurrency(symbol))}</p>
                             <p className="text-slate-400 text-xs">{calculation.actualRiskPercent.toFixed(2)}% 本金</p>
                           </div>
                         </div>
                         {calculation.potentialProfit && (
                           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
                             <p className="text-emerald-300 text-xs">潛在盈利</p>
-                            <p className="text-white font-bold text-lg">{formatCurrency(calculation.potentialProfit)}</p>
+                            <p className="text-white font-bold text-lg">{formatCurrency(calculation.potentialProfit, getSymbolCurrency(symbol))}</p>
                             <p className="text-emerald-400 text-xs">+{calculation.targetGainPercent.toFixed(1)}%</p>
                           </div>
                         )}
@@ -684,11 +701,11 @@
                               <div className="flex items-center justify-between">
                                 <div>
                                   <p className="text-slate-400 text-xs">現價</p>
-                                  <p className="text-white font-bold text-2xl">{formatCurrency(metrics.currentPrice)}</p>
+                                  <p className="text-white font-bold text-2xl">{formatCurrency(metrics.currentPrice, getSymbolCurrency(trade.symbol))}</p>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-slate-400 text-xs">未實現盈虧</p>
-                                  <p className={`font-bold text-xl ${metrics.unrealizedPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(metrics.unrealizedPnL)}</p>
+                                  <p className={`font-bold text-xl ${metrics.unrealizedPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(metrics.unrealizedPnL, getSymbolCurrency(trade.symbol))}</p>
                                   <p className={`text-sm ${metrics.unrealizedPnLPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(metrics.unrealizedPnLPercent)}</p>
                                 </div>
                               </div>
@@ -698,7 +715,7 @@
                           <div className="grid grid-cols-3 gap-2 mb-3 text-center">
                             <div className="bg-slate-700/30 rounded-lg p-2">
                               <p className="text-slate-400 text-xs">入場價</p>
-                              <p className="text-white font-medium">{formatCurrency(trade.entryPrice)}</p>
+                              <p className="text-white font-medium">{formatCurrency(trade.entryPrice, getSymbolCurrency(trade.symbol))}</p>
                             </div>
                             <div className="bg-slate-700/30 rounded-lg p-2">
                               <p className="text-slate-400 text-xs">股數</p>
@@ -706,7 +723,7 @@
                             </div>
                             <div className="bg-slate-700/30 rounded-lg p-2">
                               <p className="text-slate-400 text-xs">初始止損</p>
-                              <p className="text-white font-medium">{formatCurrency(trade.initialStopLoss)}</p>
+                              <p className="text-white font-medium">{formatCurrency(trade.initialStopLoss, getSymbolCurrency(trade.symbol))}</p>
                             </div>
                           </div>
 
@@ -715,18 +732,18 @@
                               <div className="flex items-center justify-between">
                                 <div>
                                   <p className="text-slate-400 text-xs">現時止損</p>
-                                  <p className="text-white font-bold text-lg">{formatCurrency(trade.currentStopLoss)}</p>
+                                  <p className="text-white font-bold text-lg">{formatCurrency(trade.currentStopLoss, getSymbolCurrency(trade.symbol))}</p>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-slate-400 text-xs">{metrics?.isRiskFree ? '保證利潤' : '風險金額'}</p>
-                                  <p className={`font-bold ${metrics?.isRiskFree ? 'text-emerald-400' : 'text-red-400'}`}>{metrics?.isRiskFree ? '+' : '-'}{formatCurrency(Math.abs(metrics?.currentRisk || 0))}</p>
+                                  <p className={`font-bold ${metrics?.isRiskFree ? 'text-emerald-400' : 'text-red-400'}`}>{metrics?.isRiskFree ? '+' : '-'}{formatCurrency(Math.abs(metrics?.currentRisk || 0), getSymbolCurrency(trade.symbol))}</p>
                                 </div>
                               </div>
                               {!metrics?.isRiskFree && (
                                 <div className="mt-2">
                                   <div className="flex justify-between text-xs text-slate-400 mb-1">
                                     <span>→ Risk Free</span>
-                                    <span>{formatCurrency(trade.entryPrice - trade.currentStopLoss)}</span>
+                                    <span>{formatCurrency(trade.entryPrice - trade.currentStopLoss, getSymbolCurrency(trade.symbol))}</span>
                                   </div>
                                   <div className="w-full bg-slate-600 rounded-full h-1.5">
                                     <div className="bg-gradient-to-r from-yellow-500 to-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.max(0, Math.min(100, ((trade.currentStopLoss - trade.initialStopLoss) / (trade.entryPrice - trade.initialStopLoss)) * 100))}%` }} />
@@ -741,11 +758,11 @@
                               <div className="flex items-center justify-between">
                                 <div>
                                   <p className="text-slate-400 text-xs">平倉價</p>
-                                  <p className="text-white font-bold">{formatCurrency(trade.exitPrice)}</p>
+                                  <p className="text-white font-bold">{formatCurrency(trade.exitPrice, getSymbolCurrency(trade.symbol))}</p>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-slate-400 text-xs">盈虧</p>
-                                  <p className={`font-bold text-xl ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}</p>
+                                  <p className={`font-bold text-xl ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl, getSymbolCurrency(trade.symbol))}</p>
                                 </div>
                               </div>
                             </div>
