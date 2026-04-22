@@ -1,0 +1,20 @@
+package com.kenneth.stockcalc.ui.calculator
+
+import com.kenneth.stockcalc.domain.model.CalculationResult
+import com.kenneth.stockcalc.domain.model.Currency
+
+enum class StopLossMode { PRICE, PERCENT }
+
+data class CalculatorUiState(
+    val capital: String = "128000",
+    val symbol: String = "",
+    val buyPrice: String = "",
+    val stopLossMode: StopLossMode = StopLossMode.PRICE,
+    val stopLoss: String = "",
+    val stopLossPercent: String = "",
+    val maxLossPercent: String = "0.5",
+    val targetPrice: String = "",
+    val displayCurrency: Currency = Currency.USD,
+    val result: CalculationResult = CalculationResult.Incomplete,
+    val savedTradeId: String? = null,
+)

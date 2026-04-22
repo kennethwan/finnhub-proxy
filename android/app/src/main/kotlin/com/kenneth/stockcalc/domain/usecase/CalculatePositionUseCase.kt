@@ -3,9 +3,10 @@ package com.kenneth.stockcalc.domain.usecase
 import com.kenneth.stockcalc.domain.model.Calculation
 import com.kenneth.stockcalc.domain.model.CalculationResult
 import com.kenneth.stockcalc.domain.model.Currency
+import javax.inject.Inject
 import kotlin.math.floor
 
-class CalculatePositionUseCase {
+class CalculatePositionUseCase @Inject constructor() {
     operator fun invoke(
         capital: Double?,
         displayCurrency: Currency,
