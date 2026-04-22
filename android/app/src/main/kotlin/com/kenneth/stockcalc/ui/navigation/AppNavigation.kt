@@ -59,7 +59,17 @@ fun AppNavigation() {
             startDestination = Tab.Calculator.route,
             modifier = Modifier.padding(padding),
         ) {
-            composable(Tab.Calculator.route) { Text("Calculator placeholder") }
+            composable(Tab.Calculator.route) {
+                com.kenneth.stockcalc.ui.calculator.CalculatorScreen(
+                    onTradeAdded = {
+                        nav.navigate(Tab.Trades.route) {
+                            popUpTo(nav.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
             composable(Tab.Trades.route) { Text("Trades placeholder") }
             composable(Tab.History.route) { Text("History placeholder") }
         }
