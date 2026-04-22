@@ -70,7 +70,7 @@ fun AppNavigation() {
                     }
                 )
             }
-            composable(Tab.Trades.route) { Text("Trades placeholder") }
+            composable(Tab.Trades.route) { com.kenneth.stockcalc.ui.trades.TradesScreen() }
             composable(Tab.History.route) { Text("History placeholder") }
         }
     }
