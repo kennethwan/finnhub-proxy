@@ -1,3 +1,13 @@
 .env
 node_modules
 .DS_Store
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/release.keystore
+android/app/keystore.properties
+*.iml
+.idea/
