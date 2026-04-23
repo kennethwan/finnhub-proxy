@@ -23,12 +23,52 @@ class CalculatePositionUseCaseTest {
         )
         val calc = (result as CalculationResult.Success).calculation
         assertEquals(10, calc.shares)
+        assertEquals(10, calc.lots)
+        assertEquals(1, calc.lotSize)
         assertEquals(10.0, calc.riskPerShare)
         assertEquals(100.0, calc.maxLossAmount)
         assertEquals(1_000.0, calc.requiredCapital)
         assertEquals(100.0, calc.actualRisk)
         assertEquals(2.0, calc.riskRewardRatio)
         assertEquals(200.0, calc.potentialProfit)
+    }
+
+    @Test
+    fun `HK stock with 100-share lot floors to lot boundary`() {
+        // maxLoss 1000 / riskPerShare 10 = 100 rawShares. 100 / 100 = 1 lot = 100 shares.
+        val result = useCase(
+            capital = 100_000.0,
+            displayCurrency = Currency.HKD,
+            symbol = "0700.HK",
+            buyPrice = 100.0,
+            stopLoss = 90.0,
+            maxLossPercent = 1.0,
+            targetPrice = null,
+            lotSize = 100,
+        )
+        val calc = (result as CalculationResult.Success).calculation
+        assertEquals(100, calc.shares)
+        assertEquals(1, calc.lots)
+        assertEquals(100, calc.lotSize)
+    }
+
+    @Test
+    fun `lot size rounds shares down to multiple of lotSize`() {
+        // maxLoss 175 / riskPerShare 10 = 17 rawShares, lotSize 5 → 3 lots = 15 shares.
+        val result = useCase(
+            capital = 17_500.0,
+            displayCurrency = Currency.USD,
+            symbol = "AAPL",
+            buyPrice = 100.0,
+            stopLoss = 90.0,
+            maxLossPercent = 1.0,
+            targetPrice = null,
+            lotSize = 5,
+        )
+        val calc = (result as CalculationResult.Success).calculation
+        assertEquals(15, calc.shares)
+        assertEquals(3, calc.lots)
+        assertEquals(5, calc.lotSize)
     }
 
     @Test

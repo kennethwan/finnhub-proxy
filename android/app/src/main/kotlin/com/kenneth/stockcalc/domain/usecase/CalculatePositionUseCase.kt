@@ -15,6 +15,7 @@ class CalculatePositionUseCase @Inject constructor() {
         stopLoss: Double?,
         maxLossPercent: Double?,
         targetPrice: Double?,
+        lotSize: Int = 1,
     ): CalculationResult {
         if (capital == null || buyPrice == null || stopLoss == null || maxLossPercent == null) {
             return CalculationResult.Incomplete
@@ -23,11 +24,14 @@ class CalculatePositionUseCase @Inject constructor() {
             return CalculationResult.Error(Calculation.INVALID_STOP_LOSS)
         }
 
+        val effectiveLotSize = lotSize.coerceAtLeast(1)
         val nativeCurrency = Currency.fromSymbol(symbol)
         val riskPerShare = buyPrice - stopLoss
         val maxLossDisplay = capital * maxLossPercent / 100.0
         val maxLossNative = Currency.convert(maxLossDisplay, displayCurrency, nativeCurrency)
-        val shares = floor(maxLossNative / riskPerShare).toInt().coerceAtLeast(0)
+        val rawShares = floor(maxLossNative / riskPerShare).toInt().coerceAtLeast(0)
+        val lots = rawShares / effectiveLotSize
+        val shares = lots * effectiveLotSize
 
         val requiredCapitalNative = shares * buyPrice
         val requiredCapitalDisplay = Currency.convert(requiredCapitalNative, nativeCurrency, displayCurrency)
@@ -51,6 +55,8 @@ class CalculatePositionUseCase @Inject constructor() {
         return CalculationResult.Success(
             Calculation(
                 shares = shares,
+                lots = lots,
+                lotSize = effectiveLotSize,
                 riskPerShare = riskPerShare,
                 stopLossPercentage = stopLossPercentage,
                 maxLossAmount = maxLossDisplay,

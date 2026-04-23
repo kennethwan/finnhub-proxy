@@ -3,13 +3,17 @@ package com.kenneth.stockcalc.ui.calculator
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kenneth.stockcalc.domain.model.CalculationResult
+import com.kenneth.stockcalc.domain.model.Currency
 import com.kenneth.stockcalc.domain.model.StopLossEntry
 import com.kenneth.stockcalc.domain.model.Trade
 import com.kenneth.stockcalc.domain.model.TradeStatus
 import com.kenneth.stockcalc.domain.repository.PreferencesRepository
+import com.kenneth.stockcalc.domain.repository.QuotesRepository
 import com.kenneth.stockcalc.domain.repository.TradesRepository
 import com.kenneth.stockcalc.domain.usecase.CalculatePositionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,9 +28,12 @@ class CalculatorViewModel @Inject constructor(
     private val calculate: CalculatePositionUseCase,
     private val prefs: PreferencesRepository,
     private val trades: TradesRepository,
+    private val quotes: QuotesRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CalculatorUiState())
     val uiState: StateFlow<CalculatorUiState> = _uiState.asStateFlow()
+
+    private var autoFillJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -38,13 +45,31 @@ class CalculatorViewModel @Inject constructor(
     }
 
     fun onCapitalChange(v: String) { mutateAndRecalc { copy(capital = v) } }
-    fun onSymbolChange(v: String) { mutateAndRecalc { copy(symbol = v.uppercase()) } }
+
+    fun onSymbolChange(v: String) {
+        val upper = v.uppercase()
+        val previous = _uiState.value.symbol
+        val defaultLot = defaultLotSizeFor(upper)
+        val previousDefaultLot = defaultLotSizeFor(previous)
+        _uiState.update {
+            val lotSize = if (it.lotSize == previousDefaultLot.toString() || it.lotSize.isBlank()) {
+                defaultLot.toString()
+            } else {
+                it.lotSize
+            }
+            it.copy(symbol = upper, lotSize = lotSize)
+        }
+        recalc()
+        scheduleQuoteAutoFill(upper)
+    }
+
     fun onBuyPriceChange(v: String) { mutateAndRecalc { copy(buyPrice = v) } }
     fun onStopLossChange(v: String) { mutateAndRecalc { copy(stopLoss = v) } }
     fun onStopLossPercentChange(v: String) { mutateAndRecalc { copy(stopLossPercent = v) } }
     fun onStopLossModeChange(m: StopLossMode) { mutateAndRecalc { copy(stopLossMode = m) } }
     fun onMaxLossPercentChange(v: String) { mutateAndRecalc { copy(maxLossPercent = v) } }
     fun onTargetPriceChange(v: String) { mutateAndRecalc { copy(targetPrice = v) } }
+    fun onLotSizeChange(v: String) { mutateAndRecalc { copy(lotSize = v) } }
 
     fun onAddTrade() {
         val s = _uiState.value
@@ -78,6 +103,27 @@ class CalculatorViewModel @Inject constructor(
         }
     }
 
+    private fun scheduleQuoteAutoFill(symbol: String) {
+        autoFillJob?.cancel()
+        val trimmed = symbol.trim()
+        if (trimmed.isBlank()) {
+            _uiState.update { it.copy(fetchingQuote = false) }
+            return
+        }
+        autoFillJob = viewModelScope.launch {
+            delay(500)
+            _uiState.update { it.copy(fetchingQuote = true) }
+            val result = quotes.fetch(listOf(trimmed))
+            _uiState.update { it.copy(fetchingQuote = false) }
+            val price = result.getOrNull()?.get(trimmed)?.price ?: return@launch
+            val current = _uiState.value
+            if (current.symbol == trimmed && current.buyPrice.isBlank()) {
+                _uiState.update { it.copy(buyPrice = "%.2f".format(price)) }
+                recalc()
+            }
+        }
+    }
+
     private fun mutateAndRecalc(transform: CalculatorUiState.() -> CalculatorUiState) {
         _uiState.update(transform)
         recalc()
@@ -96,6 +142,7 @@ class CalculatorViewModel @Inject constructor(
             }
         }
         val target = s.targetPrice.toDoubleOrNull()
+        val lotSize = s.lotSize.toIntOrNull()?.coerceAtLeast(1) ?: 1
 
         val result = calculate(
             capital = capital,
@@ -105,7 +152,11 @@ class CalculatorViewModel @Inject constructor(
             stopLoss = stopLoss,
             maxLossPercent = maxLoss,
             targetPrice = target,
+            lotSize = lotSize,
         )
         _uiState.update { it.copy(result = result) }
     }
+
+    private fun defaultLotSizeFor(symbol: String): Int =
+        if (Currency.fromSymbol(symbol) == Currency.HKD) 100 else 1
 }

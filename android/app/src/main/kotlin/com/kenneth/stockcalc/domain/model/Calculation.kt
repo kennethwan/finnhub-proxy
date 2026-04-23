@@ -2,6 +2,8 @@ package com.kenneth.stockcalc.domain.model
 
 data class Calculation(
     val shares: Int,
+    val lots: Int,
+    val lotSize: Int,
     val riskPerShare: Double,
     val stopLossPercentage: Double,
     val maxLossAmount: Double,

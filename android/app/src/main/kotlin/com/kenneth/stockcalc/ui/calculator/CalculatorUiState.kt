@@ -14,6 +14,8 @@ data class CalculatorUiState(
     val stopLossPercent: String = "",
     val maxLossPercent: String = "0.5",
     val targetPrice: String = "",
+    val lotSize: String = "1",
+    val fetchingQuote: Boolean = false,
     val displayCurrency: Currency = Currency.USD,
     val result: CalculationResult = CalculationResult.Incomplete,
     val savedTradeId: String? = null,

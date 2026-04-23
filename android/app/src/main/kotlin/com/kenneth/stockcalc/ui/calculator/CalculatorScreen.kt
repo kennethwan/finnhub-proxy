@@ -73,6 +73,7 @@ fun CalculatorScreen(
         }
         NumberField(state.maxLossPercent, viewModel::onMaxLossPercentChange, stringResource(R.string.label_max_loss_percent))
         NumberField(state.targetPrice, viewModel::onTargetPriceChange, stringResource(R.string.label_target_price))
+        NumberField(state.lotSize, viewModel::onLotSizeChange, stringResource(R.string.label_lot_size))
 
         ResultCard(state)
 
@@ -105,7 +106,11 @@ private fun ResultCard(state: CalculatorUiState) {
                 is CalculationResult.Error -> Text(r.message)
                 is CalculationResult.Success -> {
                     val c = r.calculation
-                    Text("股數: ${c.shares}")
+                    if (c.lotSize > 1) {
+                        Text("手數: ${c.lots} 手 (= ${c.shares} 股, 每手 ${c.lotSize})")
+                    } else {
+                        Text("股數: ${c.shares}")
+                    }
                     Text("所需資金: ${formatMoney(c.requiredCapital, state.displayCurrency.name)}")
                     Text("實際風險: ${formatMoney(c.actualRisk, state.displayCurrency.name)} (${"%.2f".format(c.actualRiskPercent)}%)")
                     Text("資金使用: ${"%.2f".format(c.capitalUsagePercent)}%")

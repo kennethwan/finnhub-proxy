@@ -11,6 +11,7 @@
     <string name="label_stop_loss_percent">止損 %</string>
     <string name="label_max_loss_percent">最大風險 %</string>
     <string name="label_target_price">目標價</string>
+    <string name="label_lot_size">每手股數</string>
     <string name="action_add_trade">加入追蹤</string>
     <string name="action_update_stop">推高止損</string>
     <string name="action_close_trade">平倉</string>
