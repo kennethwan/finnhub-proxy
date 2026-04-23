@@ -25,13 +25,34 @@ fun TradeCard(
     onUpdateStopLoss: () -> Unit,
     onClose: () -> Unit,
     onDelete: () -> Unit,
+    onOpenChart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val rMultiple = run {
+        val risk = item.trade.entryPrice - item.trade.initialStopLoss
+        val price = item.currentPrice
+        if (price != null && risk > 0) (price - item.trade.entryPrice) / risk else null
+    }
     Card(modifier = modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(item.trade.symbol, style = MaterialTheme.typography.titleMedium)
-                if (item.isRiskFree) RiskFreeBadge()
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(item.trade.symbol, style = MaterialTheme.typography.titleMedium)
+                    if (item.isRiskFree) RiskFreeBadge()
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    rMultiple?.let { r ->
+                        Text(
+                            "%+.2fR".format(r),
+                            color = if (r >= 0) EmeraldAccent else RoseLoss,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                    TextButton(onClick = onOpenChart) { Text("📊") }
+                }
             }
             val native = item.trade.nativeCurrency.name
             Text("Entry: $native ${"%.2f".format(item.trade.entryPrice)}  ·  Shares: ${item.trade.shares}")

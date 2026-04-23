@@ -5,6 +5,7 @@ import com.kenneth.stockcalc.domain.model.Currency
 import com.kenneth.stockcalc.domain.model.Quote
 import com.kenneth.stockcalc.domain.model.Trade
 import com.kenneth.stockcalc.domain.model.TradeStatus
+import com.kenneth.stockcalc.domain.repository.CandlesRepository
 import com.kenneth.stockcalc.domain.repository.PreferencesRepository
 import com.kenneth.stockcalc.domain.repository.QuotesRepository
 import com.kenneth.stockcalc.domain.repository.TradesRepository
@@ -29,6 +30,9 @@ class TradesViewModelTest {
     private val tradesRepo = mockk<TradesRepository>(relaxed = true)
     private val quotesRepo = mockk<QuotesRepository>(relaxed = true)
     private val prefs = mockk<PreferencesRepository>(relaxed = true)
+    private val candles = mockk<CandlesRepository>(relaxed = true).also {
+        coEvery { it.fetch(any(), any(), any()) } returns Result.success(emptyList())
+    }
 
     @BeforeEach fun setUp() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
     @AfterEach fun tearDown() { Dispatchers.resetMain() }
@@ -42,7 +46,7 @@ class TradesViewModelTest {
             mapOf("AAPL" to Quote("AAPL", 110.0, 1.0, 0.9, Clock.System.now()))
         )
 
-        val vm = TradesViewModel(tradesRepo, quotesRepo, prefs)
+        val vm = TradesViewModel(tradesRepo, quotesRepo, prefs, candles)
 
         vm.uiState.test {
             val latest = expectMostRecentItem()

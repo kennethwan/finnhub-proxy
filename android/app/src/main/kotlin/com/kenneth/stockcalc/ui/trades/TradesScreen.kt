@@ -48,6 +48,21 @@ fun TradesScreen(viewModel: TradesViewModel = hiltViewModel()) {
                 onUpdateStopLoss = { updatingId = item.trade.id },
                 onClose = { closingId = item.trade.id },
                 onDelete = { viewModel.deleteTrade(item.trade.id) },
+                onOpenChart = { viewModel.openChart(item.trade.id) },
+            )
+        }
+    }
+
+    state.chartTradeId?.let { id ->
+        val item = state.items.firstOrNull { it.trade.id == id }
+        if (item != null) {
+            TradeChartSheet(
+                trade = item.trade,
+                currentPrice = item.currentPrice,
+                displayCurrency = state.displayCurrency,
+                state = state.chart,
+                onLoad = { /* already triggered by openChart */ },
+                onDismiss = { viewModel.closeChart() },
             )
         }
     }

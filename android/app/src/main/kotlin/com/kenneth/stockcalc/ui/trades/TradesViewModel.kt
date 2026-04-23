@@ -7,9 +7,11 @@ import com.kenneth.stockcalc.domain.model.Quote
 import com.kenneth.stockcalc.domain.model.StopLossEntry
 import com.kenneth.stockcalc.domain.model.Trade
 import com.kenneth.stockcalc.domain.model.TradeStatus
+import com.kenneth.stockcalc.domain.repository.CandlesRepository
 import com.kenneth.stockcalc.domain.repository.PreferencesRepository
 import com.kenneth.stockcalc.domain.repository.QuotesRepository
 import com.kenneth.stockcalc.domain.repository.TradesRepository
+import com.kenneth.stockcalc.ui.calculator.ChartState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import javax.inject.Inject
@@ -28,6 +31,7 @@ class TradesViewModel @Inject constructor(
     private val tradesRepo: TradesRepository,
     private val quotesRepo: QuotesRepository,
     private val prefs: PreferencesRepository,
+    private val candles: CandlesRepository,
 ) : ViewModel() {
     private val _quotes = MutableStateFlow<Map<String, Quote>>(emptyMap())
     private val _uiState = MutableStateFlow(TradesUiState())
@@ -37,12 +41,12 @@ class TradesViewModel @Inject constructor(
 
     init {
         combine(tradesRepo.trades, _quotes, prefs.displayCurrency) { trades, quotes, ccy ->
-            TradesUiState(
-                items = trades.filter { it.status == TradeStatus.OPEN }
-                    .map { t -> toItem(t, quotes[t.symbol], ccy) },
-                displayCurrency = ccy,
-            )
-        }.onEach { _uiState.value = it }.launchIn(viewModelScope)
+            val items = trades.filter { it.status == TradeStatus.OPEN }
+                .map { t -> toItem(t, quotes[t.symbol], ccy) }
+            Triple(items, ccy, quotes)
+        }.onEach { (items, ccy, _) ->
+            _uiState.update { it.copy(items = items, displayCurrency = ccy) }
+        }.launchIn(viewModelScope)
 
         viewModelScope.launch {
             tradesRepo.refresh()
@@ -98,6 +102,28 @@ class TradesViewModel @Inject constructor(
 
     fun deleteTrade(tradeId: String) = viewModelScope.launch {
         tradesRepo.delete(tradeId)
+    }
+
+    fun openChart(tradeId: String) {
+        _uiState.update { it.copy(chartTradeId = tradeId, chart = ChartState(loading = true)) }
+        loadChartData(tradeId)
+    }
+
+    fun closeChart() {
+        _uiState.update { it.copy(chartTradeId = null, chart = ChartState()) }
+    }
+
+    private fun loadChartData(tradeId: String) {
+        val symbol = _uiState.value.items.firstOrNull { it.trade.id == tradeId }?.trade?.symbol ?: return
+        viewModelScope.launch {
+            candles.fetch(symbol)
+                .onSuccess { list ->
+                    _uiState.update { it.copy(chart = ChartState(candles = list)) }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(chart = ChartState(error = e.message ?: "error")) }
+                }
+        }
     }
 
     private suspend fun fetchQuotesOnce() {
