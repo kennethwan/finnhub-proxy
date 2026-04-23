@@ -22,7 +22,7 @@ android {
         buildConfigField(
             "String",
             "QUOTES_BASE_URL",
-            "\"https://finnhub-proxy.vercel.app\""
+            "\"https://finnhub-proxy-sigma.vercel.app\""
         )
         buildConfigField(
             "String",
