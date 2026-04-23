@@ -5,6 +5,8 @@ import com.kenneth.stockcalc.domain.model.CalculationResult
 import com.kenneth.stockcalc.domain.model.Currency
 import com.kenneth.stockcalc.domain.model.Trade
 import com.kenneth.stockcalc.domain.usecase.CalculatePositionUseCase
+import com.kenneth.stockcalc.domain.usecase.DetectKeyLevelsUseCase
+import com.kenneth.stockcalc.domain.repository.CandlesRepository
 import com.kenneth.stockcalc.domain.repository.PreferencesRepository
 import com.kenneth.stockcalc.domain.repository.QuotesRepository
 import com.kenneth.stockcalc.domain.repository.TradesRepository
@@ -33,6 +35,10 @@ class CalculatorViewModelTest {
     private val quotes = mockk<QuotesRepository>(relaxed = true).also {
         coEvery { it.fetch(any()) } returns Result.success(emptyMap())
     }
+    private val candles = mockk<CandlesRepository>(relaxed = true).also {
+        coEvery { it.fetch(any(), any(), any()) } returns Result.success(emptyList())
+    }
+    private val detectKeyLevels = DetectKeyLevelsUseCase()
 
     @BeforeEach fun setUp() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
     @AfterEach fun tearDown() { Dispatchers.resetMain() }
@@ -40,7 +46,7 @@ class CalculatorViewModelTest {
     @Test
     fun `updates result when inputs are valid`() = runTest {
         coEvery { prefs.displayCurrency } returns flowOf(Currency.USD)
-        val vm = CalculatorViewModel(useCase, prefs, trades, quotes)
+        val vm = CalculatorViewModel(useCase, prefs, trades, quotes, candles, detectKeyLevels)
         vm.onCapitalChange("10000")
         vm.onSymbolChange("AAPL")
         vm.onBuyPriceChange("100")
@@ -62,7 +68,7 @@ class CalculatorViewModelTest {
         val tradeSlot = slot<Trade>()
         coEvery { trades.add(capture(tradeSlot)) } coAnswers { Result.success(tradeSlot.captured) }
 
-        val vm = CalculatorViewModel(useCase, prefs, trades, quotes)
+        val vm = CalculatorViewModel(useCase, prefs, trades, quotes, candles, detectKeyLevels)
         vm.onCapitalChange("10000")
         vm.onSymbolChange("AAPL")
         vm.onBuyPriceChange("100")

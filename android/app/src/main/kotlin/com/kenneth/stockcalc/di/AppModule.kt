@@ -1,6 +1,7 @@
 package com.kenneth.stockcalc.di
 
 import com.kenneth.stockcalc.BuildConfig
+import com.kenneth.stockcalc.data.remote.CandlesApi
 import com.kenneth.stockcalc.data.remote.QuotesApi
 import com.kenneth.stockcalc.data.supabase.SupabaseProvider
 import dagger.Module
@@ -29,6 +30,10 @@ object AppModule {
     @Provides @Singleton
     fun provideQuotesApi(client: HttpClient): QuotesApi =
         QuotesApi(client, baseUrl = BuildConfig.QUOTES_BASE_URL)
+
+    @Provides @Singleton
+    fun provideCandlesApi(client: HttpClient): CandlesApi =
+        CandlesApi(client, baseUrl = BuildConfig.QUOTES_BASE_URL)
 
     @Provides @Singleton
     fun provideSupabaseClient(): SupabaseClient = SupabaseProvider.create()

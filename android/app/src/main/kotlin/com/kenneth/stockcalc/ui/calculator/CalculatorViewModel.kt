@@ -7,10 +7,12 @@ import com.kenneth.stockcalc.domain.model.Currency
 import com.kenneth.stockcalc.domain.model.StopLossEntry
 import com.kenneth.stockcalc.domain.model.Trade
 import com.kenneth.stockcalc.domain.model.TradeStatus
+import com.kenneth.stockcalc.domain.repository.CandlesRepository
 import com.kenneth.stockcalc.domain.repository.PreferencesRepository
 import com.kenneth.stockcalc.domain.repository.QuotesRepository
 import com.kenneth.stockcalc.domain.repository.TradesRepository
 import com.kenneth.stockcalc.domain.usecase.CalculatePositionUseCase
+import com.kenneth.stockcalc.domain.usecase.DetectKeyLevelsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -29,6 +31,8 @@ class CalculatorViewModel @Inject constructor(
     private val prefs: PreferencesRepository,
     private val trades: TradesRepository,
     private val quotes: QuotesRepository,
+    private val candles: CandlesRepository,
+    private val detectKeyLevels: DetectKeyLevelsUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CalculatorUiState())
     val uiState: StateFlow<CalculatorUiState> = _uiState.asStateFlow()
@@ -70,6 +74,41 @@ class CalculatorViewModel @Inject constructor(
     fun onMaxLossPercentChange(v: String) { mutateAndRecalc { copy(maxLossPercent = v) } }
     fun onTargetPriceChange(v: String) { mutateAndRecalc { copy(targetPrice = v) } }
     fun onLotSizeChange(v: String) { mutateAndRecalc { copy(lotSize = v) } }
+
+    fun openChart() {
+        _uiState.update { it.copy(chartOpen = true) }
+    }
+
+    fun closeChart() {
+        _uiState.update { it.copy(chartOpen = false) }
+    }
+
+    fun loadChartData() {
+        val sym = _uiState.value.symbol.trim()
+        if (sym.isBlank()) return
+        _uiState.update { it.copy(chart = ChartState(loading = true)) }
+        viewModelScope.launch {
+            candles.fetch(sym)
+                .onSuccess { list ->
+                    val levels = detectKeyLevels(list)
+                    _uiState.update { it.copy(chart = ChartState(candles = list, keyLevels = levels)) }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(chart = ChartState(error = e.message ?: "error")) }
+                }
+        }
+    }
+
+    fun onStopLossFromChart(price: Double) {
+        _uiState.update {
+            it.copy(
+                stopLoss = "%.2f".format(price),
+                stopLossMode = StopLossMode.PRICE,
+                chartOpen = false,
+            )
+        }
+        recalc()
+    }
 
     fun onAddTrade() {
         val s = _uiState.value

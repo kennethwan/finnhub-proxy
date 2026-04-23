@@ -2,14 +2,17 @@ package com.kenneth.stockcalc.ui.calculator
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -66,10 +69,21 @@ fun CalculatorScreen(
                 )
             }
         }
-        if (state.stopLossMode == StopLossMode.PRICE) {
-            NumberField(state.stopLoss, viewModel::onStopLossChange, stringResource(R.string.label_stop_loss))
-        } else {
-            NumberField(state.stopLossPercent, viewModel::onStopLossPercentChange, stringResource(R.string.label_stop_loss_percent))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            if (state.stopLossMode == StopLossMode.PRICE) {
+                NumberField(state.stopLoss, viewModel::onStopLossChange, stringResource(R.string.label_stop_loss), modifier = Modifier.weight(1f))
+            } else {
+                NumberField(state.stopLossPercent, viewModel::onStopLossPercentChange, stringResource(R.string.label_stop_loss_percent), modifier = Modifier.weight(1f))
+            }
+            OutlinedButton(
+                onClick = viewModel::openChart,
+                enabled = state.symbol.isNotBlank(),
+                modifier = Modifier.width(64.dp),
+            ) { Text("📊") }
         }
         NumberField(state.maxLossPercent, viewModel::onMaxLossPercentChange, stringResource(R.string.label_max_loss_percent))
         NumberField(state.targetPrice, viewModel::onTargetPriceChange, stringResource(R.string.label_target_price))
@@ -83,17 +97,34 @@ fun CalculatorScreen(
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.action_add_trade)) }
     }
+
+    if (state.chartOpen) {
+        StopLossChartSheet(
+            symbol = state.symbol,
+            initialStopLoss = state.stopLoss.toDoubleOrNull(),
+            buyPrice = state.buyPrice.toDoubleOrNull(),
+            state = state.chart,
+            onLoad = viewModel::loadChartData,
+            onConfirm = viewModel::onStopLossFromChart,
+            onDismiss = viewModel::closeChart,
+        )
+    }
 }
 
 @Composable
-private fun NumberField(value: String, onChange: (String) -> Unit, label: String) {
+private fun NumberField(
+    value: String,
+    onChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+) {
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
         label = { Text(label) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     )
 }
 
