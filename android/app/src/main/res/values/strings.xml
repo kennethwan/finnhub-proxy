@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">股票倉位計算器</string>
+    <string name="tab_calculator">計算機</string>
+    <string name="tab_trades">持倉</string>
+    <string name="tab_history">歷史</string>
+    <string name="label_capital">資金</string>
+    <string name="label_symbol">股票代號</string>
+    <string name="label_buy_price">買入價</string>
+    <string name="label_stop_loss">止損價</string>
+    <string name="label_stop_loss_percent">止損 %</string>
+    <string name="label_max_loss_percent">最大風險 %</string>
+    <string name="label_target_price">目標價</string>
+    <string name="label_lot_size">每手股數</string>
+    <string name="action_add_trade">加入追蹤</string>
+    <string name="action_update_stop">推高止損</string>
+    <string name="action_close_trade">平倉</string>
+    <string name="action_delete">刪除</string>
+    <string name="action_login">登入</string>
+    <string name="action_signup">註冊</string>
+    <string name="action_sign_out">登出</string>
+    <string name="error_stop_above_entry">止損價必須低於買入價</string>
+    <string name="badge_risk_free">✅ Risk Free</string>
+</resources>

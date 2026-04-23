@@ -10,6 +10,12 @@
 - ✅ Risk Free 狀態監控
 - 💾 本地儲存交易記錄
 
+## Android App
+
+Native Kotlin + Jetpack Compose port — feature parity with the web app,
+sharing the same Vercel quote proxy and Supabase account/trades. See
+[android/README.md](android/README.md) for build + sideload instructions.
+
 ## 部署到 Vercel
 
 ### 1. Push 到 GitHub
