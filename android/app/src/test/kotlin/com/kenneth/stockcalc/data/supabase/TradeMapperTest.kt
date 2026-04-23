@@ -25,8 +25,9 @@ class TradeMapperTest {
     )
 
     @Test
-    fun `toDto maps camelCase to snake_case`() {
+    fun `toDto maps camelCase to snake_case with non-numeric id dropped`() {
         val dto = TradeMapper.toDto(domain, userId = "user-1")
+        assertEquals(null, dto.id)               // UUID string not numeric → id dropped for insert
         assertEquals("user-1", dto.userId)
         assertEquals("AAPL", dto.symbol)
         assertEquals(100.0, dto.entryPrice)
@@ -39,9 +40,15 @@ class TradeMapperTest {
     }
 
     @Test
-    fun `toDomain maps snake_case to camelCase`() {
+    fun `toDto preserves numeric id for remote rows`() {
+        val dto = TradeMapper.toDto(domain.copy(id = "26"), userId = "user-1")
+        assertEquals(26L, dto.id)
+    }
+
+    @Test
+    fun `toDomain maps numeric id to string and snake_case fields to camelCase`() {
         val dto = TradeDto(
-            id = "00000000-0000-0000-0000-000000000001",
+            id = 26L,
             userId = "user-1",
             symbol = "0700.HK",
             entryPrice = 320.0,
@@ -58,8 +65,17 @@ class TradeMapperTest {
             closedAt = "2026-04-23T03:00:00Z",
         )
         val trade = TradeMapper.toDomain(dto)
+        assertEquals("26", trade.id)
         assertEquals(TradeStatus.CLOSED, trade.status)
         assertEquals(335.0, trade.exitPrice)
         assertEquals("0700.HK", trade.symbol)
+    }
+
+    @Test
+    fun `local dto round trip preserves uuid id`() {
+        val local = TradeMapper.toLocalDto(domain)
+        assertEquals("00000000-0000-0000-0000-000000000001", local.id)
+        val back = TradeMapper.fromLocalDto(local)
+        assertEquals(domain, back)
     }
 }

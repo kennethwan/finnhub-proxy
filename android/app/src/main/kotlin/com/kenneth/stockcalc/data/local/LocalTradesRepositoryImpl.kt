@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.kenneth.stockcalc.data.supabase.TradeDto
+import com.kenneth.stockcalc.data.supabase.LocalTradeDto
 import com.kenneth.stockcalc.data.supabase.TradeMapper
 import com.kenneth.stockcalc.domain.model.Trade
 import com.kenneth.stockcalc.domain.repository.TradesRepository
@@ -26,7 +26,7 @@ class LocalTradesRepositoryImpl @Inject constructor(
     override val trades: Flow<List<Trade>> = context.tradesStore.data.map { prefs ->
         val raw = prefs[tradesKey] ?: return@map emptyList()
         runCatching {
-            json.decodeFromString<List<TradeDto>>(raw).map(TradeMapper::toDomain)
+            json.decodeFromString<List<LocalTradeDto>>(raw).map(TradeMapper::fromLocalDto)
         }.getOrElse { emptyList() }
     }
 
@@ -48,10 +48,10 @@ class LocalTradesRepositoryImpl @Inject constructor(
     private suspend fun mutate(transform: (List<Trade>) -> List<Trade>) {
         context.tradesStore.edit { prefs ->
             val existing = prefs[tradesKey]?.let {
-                runCatching { json.decodeFromString<List<TradeDto>>(it).map(TradeMapper::toDomain) }
+                runCatching { json.decodeFromString<List<LocalTradeDto>>(it).map(TradeMapper::fromLocalDto) }
                     .getOrElse { emptyList() }
             } ?: emptyList()
-            val updated = transform(existing).map { TradeMapper.toDto(it, userId = "local") }
+            val updated = transform(existing).map(TradeMapper::toLocalDto)
             prefs[tradesKey] = json.encodeToString(updated)
         }
     }

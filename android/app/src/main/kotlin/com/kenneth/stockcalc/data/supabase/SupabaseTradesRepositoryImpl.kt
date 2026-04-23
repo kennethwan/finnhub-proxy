@@ -46,9 +46,10 @@ class SupabaseTradesRepositoryImpl @Inject constructor(
 
     override suspend fun update(trade: Trade): Result<Unit> = runCatching {
         val userId = requireNotNull(auth.currentUser.first()?.id) { "not authenticated" }
-        client.postgrest.from("trades").update(TradeMapper.toDto(trade, userId)) {
+        val tradeIdLong = requireNotNull(trade.id.toLongOrNull()) { "trade id must be numeric for remote update" }
+        client.postgrest.from("trades").update(TradeMapper.toUpdateDto(trade)) {
             filter {
-                eq("id", trade.id)
+                eq("id", tradeIdLong)
                 eq("user_id", userId)
             }
         }
@@ -57,9 +58,10 @@ class SupabaseTradesRepositoryImpl @Inject constructor(
 
     override suspend fun delete(id: String): Result<Unit> = runCatching {
         val userId = requireNotNull(auth.currentUser.first()?.id) { "not authenticated" }
+        val idLong = requireNotNull(id.toLongOrNull()) { "id must be numeric for remote delete" }
         client.postgrest.from("trades").delete {
             filter {
-                eq("id", id)
+                eq("id", idLong)
                 eq("user_id", userId)
             }
         }
