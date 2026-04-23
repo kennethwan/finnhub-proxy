@@ -25,6 +25,7 @@ object AppModule {
     @Provides @Singleton
     fun provideHttpClient(json: Json): HttpClient = HttpClient(OkHttp) {
         install(ContentNegotiation) { json(json) }
+        expectSuccess = true
     }
 
     @Provides @Singleton
