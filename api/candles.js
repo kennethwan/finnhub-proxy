@@ -4,7 +4,15 @@ const yahooFinance = new YahooFinance({
   suppressNotices: ['yahooSurvey']
 });
 
-const ALLOWED_RANGES = new Set(['1mo', '3mo', '6mo', '1y', '2y', '5y']);
+const RANGE_DAYS = {
+  '1mo': 30,
+  '3mo': 90,
+  '6mo': 180,
+  '1y': 365,
+  '2y': 730,
+  '5y': 1825,
+};
+
 const ALLOWED_INTERVALS = new Set(['1d', '1wk', '1mo']);
 
 export default async function handler(req, res) {
@@ -13,13 +21,18 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   const { symbol } = req.query;
-  const range = ALLOWED_RANGES.has(req.query.range) ? req.query.range : '6mo';
+  const rangeKey = RANGE_DAYS[req.query.range] ? req.query.range : '6mo';
   const interval = ALLOWED_INTERVALS.has(req.query.interval) ? req.query.interval : '1d';
 
   if (!symbol) return res.status(400).json({ error: 'Missing symbol parameter' });
 
+  const period1 = new Date(Date.now() - RANGE_DAYS[rangeKey] * 24 * 60 * 60 * 1000);
+
   try {
-    const result = await yahooFinance.chart(symbol.toUpperCase(), { range, interval });
+    const result = await yahooFinance.chart(symbol.toUpperCase(), {
+      period1,
+      interval,
+    });
     const candles = (result.quotes || [])
       .filter(q => q.open != null && q.high != null && q.low != null && q.close != null)
       .map(q => ({
@@ -30,7 +43,7 @@ export default async function handler(req, res) {
         c: q.close,
         v: q.volume ?? 0,
       }));
-    return res.status(200).json({ symbol: symbol.toUpperCase(), range, interval, candles });
+    return res.status(200).json({ symbol: symbol.toUpperCase(), range: rangeKey, interval, candles });
   } catch (e) {
     console.error(`candles error for ${symbol}:`, e.message);
     return res.status(500).json({ error: e.message });
