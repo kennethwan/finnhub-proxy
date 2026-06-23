@@ -27,6 +27,7 @@ const Btn = styled.button`
 
 export default function Header() {
   const t = useTranslations('app');
+  const th = useTranslations('header');
   const [mode, setMode] = useAtom(themeAtom);
   const [currency, setCurrency] = useAtom(currencyAtom);
   const locale = useLocale();
@@ -35,18 +36,18 @@ export default function Header() {
 
   const switchLocale = () => {
     const next = locales.find((l) => l !== locale) ?? locale;
-    router.push(pathname.replace(`/${locale}`, `/${next}`));
+    router.push(pathname.replace(new RegExp(`^/${locale}(?=/|$)`), `/${next}`));
   };
 
   return (
     <Bar>
       <Brand>▲ {t('title')}</Brand>
       <div style={{ display: 'flex', gap: 8 }}>
-        <Btn onClick={() => setCurrency(currency === 'USD' ? 'HKD' : 'USD')}>
+        <Btn onClick={() => setCurrency(currency === 'USD' ? 'HKD' : 'USD')} aria-label={`${currency} currency`}>
           {currency === 'USD' ? '🇺🇸 USD' : '🇭🇰 HKD'}
         </Btn>
-        <Btn onClick={switchLocale}>{locale === 'zh-HK' ? 'EN' : '中'}</Btn>
-        <Btn onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} aria-label="theme">
+        <Btn onClick={switchLocale} aria-label={th('language')}>{locale === 'zh-HK' ? 'EN' : '中'}</Btn>
+        <Btn onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} aria-label={th('theme')}>
           {mode === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </Btn>
       </div>
