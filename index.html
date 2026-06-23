@@ -2,71 +2,91 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>股票倉位計算器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>股票倉位計算器 · Position Sizer</title>
 
   <!-- PWA / iOS Safari -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#0a0b0d">
   <meta name="apple-mobile-web-app-title" content="倉位計算器">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="format-detection" content="telephone=no">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Familjen Grotesk"', '"PingFang HK"', '"Noto Sans HK"', '"Microsoft JhengHei"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', '"PingFang HK"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
   <style>
-    html {
-      background-color: #0f172a;
-      height: 100%;
-      height: -webkit-fill-available;
-    }
+    :root { color-scheme: dark; }
+    html { background-color: #0a0b0d; height: 100%; }
     body {
-      background-color: #0f172a;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-      background-attachment: fixed;
       margin: 0;
-      padding: 0;
-      min-height: 100%;
       min-height: 100vh;
-      min-height: -webkit-fill-available;
-      /* Prevent pull-to-refresh and bounce */
+      font-family: '"Familjen Grotesk"', 'PingFang HK', 'Noto Sans HK', system-ui, sans-serif;
+      color: #e6e8ea;
+      background:
+        radial-gradient(1100px 560px at 78% -8%, rgba(251,191,36,0.06), transparent 60%),
+        radial-gradient(820px 480px at -8% 108%, rgba(56,189,248,0.045), transparent 62%),
+        #0a0b0d;
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
       overscroll-behavior: none;
-      overflow-x: hidden;
-      /* Disable zoom on iOS */
-      touch-action: pan-x pan-y;
     }
-    #root {
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
+    ::selection { background: rgba(251,191,36,0.28); color: #fff; }
+    /* Prevent iOS zoom-on-focus while keeping inputs comfortable */
+    input, textarea { font-size: 16px; }
+    button, a, label { touch-action: manipulation; }
+
+    /* Fine grain overlay for terminal texture */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.035;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
-    /* Prevent text selection on double-tap */
-    * {
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-      -webkit-user-select: none;
-      user-select: none;
+
+    *::-webkit-scrollbar { width: 10px; height: 10px; }
+    *::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.08);
+      border-radius: 6px;
+      border: 2px solid transparent;
+      background-clip: content-box;
     }
-    /* Allow text selection in inputs */
-    input, textarea {
-      -webkit-user-select: text;
-      user-select: text;
-      /* Prevent zoom on input focus (iOS) */
-      font-size: 16px !important;
+    *::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); background-clip: content-box; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,153,0.5); }
+      50% { opacity: 0.5; box-shadow: 0 0 0 5px rgba(52,211,153,0); }
     }
-    /* Prevent double-tap zoom */
-    button, a, label {
-      touch-action: manipulation;
-    }
+    .animate-fadeup { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+    .live-dot { animation: livePulse 2s ease-in-out infinite; }
+    .tnum { font-variant-numeric: tabular-nums; }
+    #root { position: relative; z-index: 1; min-height: 100vh; }
   </style>
 </head>
 <body>
@@ -297,15 +317,15 @@
       const fetchPrices = async () => {
         const openTrades = trades.filter(t => t.status === 'open');
         if (openTrades.length === 0) return;
-        
+
         setLoadingPrices(true);
         setPriceError('');
-        
+
         try {
           const symbols = openTrades.map(t => t.symbol).join(',');
           const response = await fetch(`/api/quotes?symbols=${symbols}`);
           const data = await response.json();
-          
+
           if (data.error) {
             setPriceError(data.error);
           } else {
@@ -324,12 +344,12 @@
       };
 
       useEffect(() => {
-        if (activeTab === 'trades' && trades.filter(t => t.status === 'open').length > 0) {
+        if (trades.filter(t => t.status === 'open').length > 0) {
           fetchPrices();
           const interval = setInterval(fetchPrices, 60000);
           return () => clearInterval(interval);
         }
-      }, [activeTab, trades.length]);
+      }, [trades.length]);
 
       const calculation = useMemo(() => {
         const capitalNum = parseFloat(capital);
@@ -375,11 +395,14 @@
         setCurrency(next);
         localStorage.setItem('display-currency', next);
       };
-      const formatCurrency = (num, fromCurrency) => {
-        const converted = fromCurrency === currency ? num
+      const convertCurrency = (num, fromCurrency) => (
+        fromCurrency === currency ? num
           : fromCurrency === 'USD' && currency === 'HKD' ? num * EXCHANGE_RATE_HKD_USD
           : fromCurrency === 'HKD' && currency === 'USD' ? num / EXCHANGE_RATE_HKD_USD
-          : num;
+          : num
+      );
+      const formatCurrency = (num, fromCurrency) => {
+        const converted = convertCurrency(num, fromCurrency);
         return new Intl.NumberFormat(currency === 'HKD' ? 'zh-HK' : 'en-US', { style: 'currency', currency }).format(converted);
       };
       const getSymbolCurrency = (sym) => sym && sym.endsWith('.HK') ? 'HKD' : 'USD';
@@ -478,328 +501,411 @@
         });
       }, [trades]);
 
+      // ----- Derived portfolio aggregates (display-currency aware) -----
+      const openTradesList = trades.filter(t => t.status === 'open');
+      const closedTradesList = trades.filter(t => t.status === 'closed');
+      const riskFreeCount = openTradesList.filter(t => t.currentStopLoss >= t.entryPrice).length;
+      const hasLiveUnrealized = openTradesList.some(t => getTradeMetrics(t).unrealizedPnL != null);
+      const totalUnrealized = openTradesList.reduce((sum, t) => {
+        const m = getTradeMetrics(t);
+        return m.unrealizedPnL != null ? sum + convertCurrency(m.unrealizedPnL, getSymbolCurrency(t.symbol)) : sum;
+      }, 0);
+      const totalRealized = closedTradesList.reduce((sum, t) => sum + convertCurrency(t.pnl || 0, getSymbolCurrency(t.symbol)), 0);
+
+      // ----- Shared class strings -----
+      const inputCls = "w-full bg-black/30 border border-white/10 rounded-md px-3 py-2.5 text-white font-mono tnum placeholder-white/25 focus:outline-none focus:border-amber-400/70 focus:ring-1 focus:ring-amber-400/25 transition-colors";
+      const labelCls = "block text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5";
+      const segActive = "bg-amber-400 text-black font-semibold";
+      const segIdle = "text-white/55 hover:text-white";
+
+      // Render helpers (pure markup — safe, no remount)
+      const cell = (label, value, valueCls) => (
+        <div className="px-3 py-2 bg-[#0f1115]">
+          <p className="text-[10px] uppercase tracking-wider text-white/35">{label}</p>
+          <p className={`font-mono tnum text-sm mt-0.5 ${valueCls || 'text-white'}`}>{value}</p>
+        </div>
+      );
+
+      const statTile = (label, value, valueCls, accentBorder) => (
+        <div className={`rounded-lg border ${accentBorder || 'border-white/[0.07]'} bg-[#0f1115] px-3 py-2.5`}>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">{label}</p>
+          <p className={`font-mono tnum text-lg font-semibold leading-tight mt-1 ${valueCls || 'text-white'}`}>{value}</p>
+        </div>
+      );
+
       if (authLoading) {
         return (
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-white text-lg">載入中...</div>
+          <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+            <span className="live-dot inline-block w-2 h-2 rounded-full bg-amber-400"></span>
+            <div className="text-white/60 text-sm font-mono uppercase tracking-[0.2em]">載入中</div>
           </div>
         );
       }
 
-      return (
-        <div className="min-h-screen p-4 pb-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-4">
-              <h1 className="text-xl font-bold text-white mb-0.5">📈 股票倉位計算器</h1>
-              <p className="text-slate-400 text-xs">風險管理 · 止損追蹤 · 實時報價</p>
-              {/* Auth UI */}
-              <div className="mt-2">
-                {user ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <span className="text-slate-400 text-sm">👤 {user.email}</span>
-                    {syncStatus && <span className="text-blue-400 text-xs">{syncStatus}</span>}
-                    <button onClick={signOut} className="text-slate-500 hover:text-red-400 text-sm transition">登出</button>
-                  </div>
-                ) : (
-                  <button onClick={() => setShowAuthModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                    🔐 登入 / 註冊
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Auth Modal */}
-            {showAuthModal && !user && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-white font-bold text-lg">{authMode === 'login' ? '登入' : '註冊'}</h2>
-                    <button onClick={() => { setShowAuthModal(false); setAuthError(''); }} className="text-slate-400 hover:text-white">✕</button>
-                  </div>
-
-                  <form onSubmit={handleAuth} className="space-y-4">
-                    <div>
-                      <label className="block text-slate-300 text-sm mb-1">Email</label>
-                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-                    <div>
-                      <label className="block text-slate-300 text-sm mb-1">密碼</label>
-                      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-
-                    {authError && (
-                      <div className={`text-sm p-2 rounded ${authError.includes('成功') ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                        {authError}
-                      </div>
-                    )}
-
-                    <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-medium transition">
-                      {authMode === 'login' ? '登入' : '註冊'}
-                    </button>
-                  </form>
-
-                  <div className="mt-4 text-center">
-                    <button onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(''); }} className="text-slate-400 text-sm hover:text-white transition">
-                      {authMode === 'login' ? '未有帳戶？註冊' : '已有帳戶？登入'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2 mb-4">
-              <button onClick={() => setActiveTab('calculator')} className={`flex-1 py-3 rounded-xl font-medium transition ${activeTab === 'calculator' ? 'bg-blue-500 text-white' : 'bg-slate-800/50 text-slate-400'}`}>🧮 計算器</button>
-              <button onClick={() => setActiveTab('trades')} className={`flex-1 py-3 rounded-xl font-medium transition relative ${activeTab === 'trades' ? 'bg-blue-500 text-white' : 'bg-slate-800/50 text-slate-400'}`}>
-                📋 持倉
-                {trades.filter(t => t.status === 'open').length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{trades.filter(t => t.status === 'open').length}</span>}
-              </button>
-              <button onClick={toggleCurrency} className="px-4 py-3 rounded-xl font-medium transition bg-slate-800/50 text-slate-300 border border-slate-700 hover:bg-slate-700/50 text-sm whitespace-nowrap">
-                {currency === 'USD' ? '🇺🇸 USD' : '🇭🇰 HKD'}
-              </button>
-            </div>
-
-            {activeTab === 'calculator' && (
-              <div className="bg-slate-800/50 rounded-2xl p-5 border border-slate-700">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-slate-300 text-sm font-medium mb-2">🏷️ 股票代號</label>
-                    <input type="text" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL, TSLA, NVDA" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-slate-300 text-sm font-medium mb-2">💰 總本金</label>
-                      <input type="number" value={capital} onChange={(e) => setCapital(e.target.value)} className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-                    <div>
-                      <label className="block text-slate-300 text-sm font-medium mb-2">⚠️ 最大虧損 %</label>
-                      <input type="number" value={maxLossPercent} onChange={(e) => setMaxLossPercent(e.target.value)} step="0.1" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-slate-300 text-sm font-medium mb-2">🎯 買入價</label>
-                      <input type="number" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} placeholder="150.00" step="0.01" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-                    <div>
-                      <label className="block text-slate-300 text-sm font-medium mb-2">🎯 目標價</label>
-                      <input type="number" value={targetPrice} onChange={(e) => setTargetPrice(e.target.value)} placeholder="選填" step="0.01" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-slate-300 text-sm font-medium mb-2">🛑 止損</label>
-                    <div className="flex gap-2 mb-2">
-                      <button onClick={() => setStopLossType('price')} className={`flex-1 py-2 rounded-lg text-sm font-medium ${stopLossType === 'price' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>價格</button>
-                      <button onClick={() => setStopLossType('percent')} className={`flex-1 py-2 rounded-lg text-sm font-medium ${stopLossType === 'percent' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>百分比</button>
-                    </div>
-                    {stopLossType === 'price' ? (
-                      <input type="number" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="止損價" step="0.01" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    ) : (
-                      <div className="relative">
-                        <input type="number" value={stopLossPercent} onChange={(e) => setStopLossPercent(e.target.value)} placeholder="5" step="0.1" className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 pr-10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">%</span>
-                      </div>
-                    )}
-                    {stopLossType === 'percent' && buyPrice && stopLossPercent && <p className="text-slate-400 text-xs mt-1">= {formatCurrency(parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100), getSymbolCurrency(symbol))}</p>}
-                  </div>
-                </div>
-
-                {calculation && (
-                  <div className="mt-5 pt-5 border-t border-slate-700">
-                    {calculation.error ? (
-                      <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-red-300 text-center">❌ {calculation.error}</div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-4 text-center">
-                          <p className="text-green-300 text-sm">建議買入</p>
-                          <p className="text-4xl font-bold text-white">{calculation.shares} 股</p>
-                          <p className="text-slate-400 text-sm mt-1">需 {formatCurrency(calculation.requiredCapital, getSymbolCurrency(symbol))} ({calculation.capitalUsagePercent.toFixed(1)}%)</p>
-                        </div>
-                        {calculation.riskRewardRatio && (
-                          <div className={`rounded-xl p-3 text-center ${calculation.riskRewardRatio >= 2 ? 'bg-emerald-500/20 border border-emerald-500/30' : calculation.riskRewardRatio >= 1 ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-red-500/20 border border-red-500/30'}`}>
-                            <p className="text-slate-300 text-sm">R:R</p>
-                            <p className="text-2xl font-bold text-white">1 : {calculation.riskRewardRatio.toFixed(2)}</p>
-                          </div>
-                        )}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-slate-700/30 rounded-xl p-3 text-center">
-                            <p className="text-slate-400 text-xs">止損價</p>
-                            <p className="text-white font-semibold">{formatCurrency(calculation.actualStopLoss, getSymbolCurrency(symbol))}</p>
-                            <p className="text-red-400 text-xs">-{calculation.stopLossPercentage.toFixed(1)}%</p>
-                          </div>
-                          <div className="bg-slate-700/30 rounded-xl p-3 text-center">
-                            <p className="text-slate-400 text-xs">風險金額</p>
-                            <p className="text-white font-semibold">{formatCurrency(calculation.actualRisk, getSymbolCurrency(symbol))}</p>
-                            <p className="text-slate-400 text-xs">{calculation.actualRiskPercent.toFixed(2)}% 本金</p>
-                          </div>
-                        </div>
-                        {calculation.potentialProfit && (
-                          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
-                            <p className="text-emerald-300 text-xs">潛在盈利</p>
-                            <p className="text-white font-bold text-lg">{formatCurrency(calculation.potentialProfit, getSymbolCurrency(symbol))}</p>
-                            <p className="text-emerald-400 text-xs">+{calculation.targetGainPercent.toFixed(1)}%</p>
-                          </div>
-                        )}
-                        <button onClick={addToTrades} disabled={!symbol.trim()} className={`w-full py-3 rounded-xl font-medium transition ${symbol.trim() ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}>📋 加入持倉</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'trades' && (
-              <div className="space-y-4">
-                {trades.filter(t => t.status === 'open').length > 0 && (
-                  <div className="space-y-2">
-                    <button onClick={fetchPrices} disabled={loadingPrices} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl py-2 text-slate-300 text-sm hover:bg-slate-700/50 transition">
-                      {loadingPrices ? '⏳ 更新中...' : '🔄 更新報價'}
-                    </button>
-                    {priceError && <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3 text-red-300 text-sm">❌ {priceError}</div>}
-                  </div>
-                )}
-
-                {trades.length === 0 ? (
-                  <div className="bg-slate-800/50 rounded-2xl p-8 text-center border border-slate-700">
-                    <p className="text-slate-400">暫無持倉記錄</p>
-                    <p className="text-slate-500 text-sm mt-1">喺計算器加入新交易</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-slate-800/50 rounded-xl p-3 text-center border border-slate-700">
-                        <p className="text-slate-400 text-xs">持倉</p>
-                        <p className="text-white font-bold text-lg">{trades.filter(t => t.status === 'open').length}</p>
-                      </div>
-                      <div className="bg-emerald-500/10 rounded-xl p-3 text-center border border-emerald-500/30">
-                        <p className="text-emerald-300 text-xs">Risk Free</p>
-                        <p className="text-white font-bold text-lg">{trades.filter(t => t.status === 'open' && t.currentStopLoss >= t.entryPrice).length}</p>
-                      </div>
-                      <div className="bg-slate-800/50 rounded-xl p-3 text-center border border-slate-700">
-                        <p className="text-slate-400 text-xs">已平倉</p>
-                        <p className="text-white font-bold text-lg">{trades.filter(t => t.status === 'closed').length}</p>
-                      </div>
-                    </div>
-
-                    {sortedTrades.map((trade) => {
-                      const metrics = trade.status === 'open' ? getTradeMetrics(trade) : null;
-                      const isEditing = editingTrade === trade.id;
-                      const isClosing = closingTrade === trade.id;
-                      
-                      return (
-                        <div key={trade.id} className={`bg-slate-800/50 rounded-2xl p-4 border ${trade.status === 'closed' ? (trade.pnl >= 0 ? 'border-green-500/50' : 'border-red-500/50') : metrics?.isRiskFree ? 'border-emerald-500/50' : 'border-slate-700'}`}>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-bold text-xl">{trade.symbol}</span>
-                              {trade.status === 'open' && metrics?.isRiskFree && <span className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-1 rounded-full">✅ Risk Free</span>}
-                              {trade.status === 'closed' && <span className={`text-xs px-2 py-1 rounded-full ${trade.pnl >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>已平倉</span>}
-                            </div>
-                            <button onClick={() => deleteTrade(trade.id)} className="text-slate-500 hover:text-red-400 text-sm">🗑️</button>
-                          </div>
-
-                          {trade.status === 'open' && metrics?.currentPrice && (
-                            <div className={`rounded-xl p-3 mb-3 ${metrics.unrealizedPnL >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-slate-400 text-xs">現價</p>
-                                  <p className="text-white font-bold text-2xl">{formatCurrency(metrics.currentPrice, getSymbolCurrency(trade.symbol))}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-slate-400 text-xs">未實現盈虧</p>
-                                  <p className={`font-bold text-xl ${metrics.unrealizedPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(metrics.unrealizedPnL, getSymbolCurrency(trade.symbol))}</p>
-                                  <p className={`text-sm ${metrics.unrealizedPnLPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(metrics.unrealizedPnLPercent)}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-3 gap-2 mb-3 text-center">
-                            <div className="bg-slate-700/30 rounded-lg p-2">
-                              <p className="text-slate-400 text-xs">入場價</p>
-                              <p className="text-white font-medium">{formatCurrency(trade.entryPrice, getSymbolCurrency(trade.symbol))}</p>
-                            </div>
-                            <div className="bg-slate-700/30 rounded-lg p-2">
-                              <p className="text-slate-400 text-xs">股數</p>
-                              <p className="text-white font-medium">{trade.shares}</p>
-                            </div>
-                            <div className="bg-slate-700/30 rounded-lg p-2">
-                              <p className="text-slate-400 text-xs">初始止損</p>
-                              <p className="text-white font-medium">{formatCurrency(trade.initialStopLoss, getSymbolCurrency(trade.symbol))}</p>
-                            </div>
-                          </div>
-
-                          {trade.status === 'open' && (
-                            <div className={`rounded-xl p-3 mb-3 ${metrics?.isRiskFree ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-slate-700/30'}`}>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-slate-400 text-xs">現時止損</p>
-                                  <p className="text-white font-bold text-lg">{formatCurrency(trade.currentStopLoss, getSymbolCurrency(trade.symbol))}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-slate-400 text-xs">{metrics?.isRiskFree ? '保證利潤' : '風險金額'}</p>
-                                  <p className={`font-bold ${metrics?.isRiskFree ? 'text-emerald-400' : 'text-red-400'}`}>{metrics?.isRiskFree ? '+' : '-'}{formatCurrency(Math.abs(metrics?.currentRisk || 0), getSymbolCurrency(trade.symbol))}</p>
-                                </div>
-                              </div>
-                              {!metrics?.isRiskFree && (
-                                <div className="mt-2">
-                                  <div className="flex justify-between text-xs text-slate-400 mb-1">
-                                    <span>→ Risk Free</span>
-                                    <span>{formatCurrency(trade.entryPrice - trade.currentStopLoss, getSymbolCurrency(trade.symbol))}</span>
-                                  </div>
-                                  <div className="w-full bg-slate-600 rounded-full h-1.5">
-                                    <div className="bg-gradient-to-r from-yellow-500 to-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.max(0, Math.min(100, ((trade.currentStopLoss - trade.initialStopLoss) / (trade.entryPrice - trade.initialStopLoss)) * 100))}%` }} />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {trade.status === 'closed' && (
-                            <div className={`rounded-xl p-3 mb-3 ${trade.pnl >= 0 ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-slate-400 text-xs">平倉價</p>
-                                  <p className="text-white font-bold">{formatCurrency(trade.exitPrice, getSymbolCurrency(trade.symbol))}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-slate-400 text-xs">盈虧</p>
-                                  <p className={`font-bold text-xl ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl, getSymbolCurrency(trade.symbol))}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {trade.status === 'open' && (
-                            <div className="space-y-2">
-                              {isEditing ? (
-                                <div className="flex gap-2">
-                                  <input type="number" value={trailingStopInput} onChange={(e) => setTrailingStopInput(e.target.value)} placeholder="新止損價" step="0.01" className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                  <button onClick={() => updateTrailingStop(trade.id)} className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm">✓</button>
-                                  <button onClick={() => { setEditingTrade(null); setTrailingStopInput(''); }} className="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">✕</button>
-                                </div>
-                              ) : isClosing ? (
-                                <div className="flex gap-2">
-                                  <input type="number" value={exitPriceInput} onChange={(e) => setExitPriceInput(e.target.value)} placeholder="平倉價" step="0.01" className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                  <button onClick={() => closeTrade(trade.id)} className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm">✓</button>
-                                  <button onClick={() => { setClosingTrade(null); setExitPriceInput(''); }} className="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">✕</button>
-                                </div>
-                              ) : (
-                                <div className="flex gap-2">
-                                  <button onClick={() => { setEditingTrade(trade.id); setTrailingStopInput(trade.currentStopLoss.toString()); }} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition">📈 更新止損</button>
-                                  <button onClick={() => setClosingTrade(trade.id)} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition">🏁 平倉</button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
-            )}
-
-            <div className="mt-4 text-center text-slate-500 text-xs">報價來源：Finnhub · 每 60 秒自動更新</div>
+      // ============================ CALCULATOR PANE ============================
+      const calculatorPane = (
+        <div className="rounded-xl border border-white/[0.07] bg-[#0f1115] overflow-hidden animate-fadeup">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.07]">
+            <h2 className="font-semibold text-white tracking-tight flex items-center gap-2">🧮 持倉計算器</h2>
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">Sizer</span>
           </div>
+
+          <div className="p-4 space-y-3.5">
+            <div>
+              <label className={labelCls}>🏷️ 股票代號</label>
+              <input type="text" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL · TSLA · 0700.HK" className={`${inputCls} uppercase tracking-wide`} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>💰 總本金</label>
+                <input type="number" value={capital} onChange={(e) => setCapital(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>⚠️ 最大虧損 %</label>
+                <input type="number" value={maxLossPercent} onChange={(e) => setMaxLossPercent(e.target.value)} step="0.1" className={inputCls} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>🎯 買入價</label>
+                <input type="number" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} placeholder="150.00" step="0.01" className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>🎯 目標價</label>
+                <input type="number" value={targetPrice} onChange={(e) => setTargetPrice(e.target.value)} placeholder="選填" step="0.01" className={inputCls} />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelCls}>🛑 止損</label>
+              <div className="inline-flex w-full p-0.5 rounded-md bg-black/30 border border-white/10 mb-2">
+                <button onClick={() => setStopLossType('price')} className={`flex-1 py-1.5 rounded text-sm transition-colors ${stopLossType === 'price' ? segActive : segIdle}`}>價格</button>
+                <button onClick={() => setStopLossType('percent')} className={`flex-1 py-1.5 rounded text-sm transition-colors ${stopLossType === 'percent' ? segActive : segIdle}`}>百分比</button>
+              </div>
+              {stopLossType === 'price' ? (
+                <input type="number" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="止損價" step="0.01" className={inputCls} />
+              ) : (
+                <div className="relative">
+                  <input type="number" value={stopLossPercent} onChange={(e) => setStopLossPercent(e.target.value)} placeholder="5" step="0.1" className={`${inputCls} pr-9`} />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 font-mono">%</span>
+                </div>
+              )}
+              {stopLossType === 'percent' && buyPrice && stopLossPercent && (
+                <p className="text-white/40 text-xs mt-1.5 font-mono tnum">= {formatCurrency(parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100), getSymbolCurrency(symbol))}</p>
+              )}
+            </div>
+          </div>
+
+          {calculation && (
+            <div className="px-4 pb-4">
+              {calculation.error ? (
+                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-300 text-center text-sm">❌ {calculation.error}</div>
+              ) : (
+                <div className="space-y-2.5 pt-1">
+                  {/* Hero: suggested shares */}
+                  <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.07] px-4 py-3.5">
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[10.5px] uppercase tracking-[0.14em] text-amber-200/70 font-semibold">建議買入</p>
+                        <p className="font-mono tnum text-4xl font-bold text-white leading-none mt-1">
+                          {calculation.shares}<span className="text-base text-white/45 ml-1.5 font-sans">股</span>
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase tracking-wider text-white/40">所需資金</p>
+                        <p className="font-mono tnum text-white text-sm mt-0.5">{formatCurrency(calculation.requiredCapital, getSymbolCurrency(symbol))}</p>
+                        <p className={`font-mono tnum text-xs ${calculation.capitalUsagePercent > 100 ? 'text-red-400' : 'text-amber-300/80'}`}>{calculation.capitalUsagePercent.toFixed(1)}% 本金</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* R:R bar */}
+                  {calculation.riskRewardRatio != null && (
+                    <div className={`flex items-center justify-between rounded-lg border px-4 py-2.5 ${calculation.riskRewardRatio >= 2 ? 'border-emerald-500/30 bg-emerald-500/10' : calculation.riskRewardRatio >= 1 ? 'border-amber-400/30 bg-amber-400/10' : 'border-red-500/30 bg-red-500/10'}`}>
+                      <span className="text-[10.5px] uppercase tracking-[0.14em] text-white/55 font-semibold">風險回報 R:R</span>
+                      <span className="font-mono tnum font-bold text-white">1 : {calculation.riskRewardRatio.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {/* Stop + risk cells */}
+                  <div className="grid grid-cols-2 gap-px rounded-lg overflow-hidden border border-white/[0.06] bg-white/[0.06]">
+                    <div className="px-3 py-2.5 bg-[#0f1115]">
+                      <p className="text-[10px] uppercase tracking-wider text-white/35">止損價</p>
+                      <p className="font-mono tnum text-white text-sm mt-0.5">{formatCurrency(calculation.actualStopLoss, getSymbolCurrency(symbol))}</p>
+                      <p className="font-mono tnum text-red-400 text-[11px]">-{calculation.stopLossPercentage.toFixed(1)}%</p>
+                    </div>
+                    <div className="px-3 py-2.5 bg-[#0f1115]">
+                      <p className="text-[10px] uppercase tracking-wider text-white/35">風險金額</p>
+                      <p className="font-mono tnum text-white text-sm mt-0.5">{formatCurrency(calculation.actualRisk, getSymbolCurrency(symbol))}</p>
+                      <p className="font-mono tnum text-white/45 text-[11px]">{calculation.actualRiskPercent.toFixed(2)}% 本金</p>
+                    </div>
+                  </div>
+
+                  {/* Potential profit */}
+                  {calculation.potentialProfit != null && (
+                    <div className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/[0.08] px-4 py-2.5">
+                      <span className="text-[10.5px] uppercase tracking-[0.14em] text-emerald-300/80 font-semibold">潛在盈利</span>
+                      <span className="text-right">
+                        <span className="font-mono tnum font-bold text-white">{formatCurrency(calculation.potentialProfit, getSymbolCurrency(symbol))}</span>
+                        <span className="font-mono tnum text-emerald-400 text-xs ml-2">+{calculation.targetGainPercent.toFixed(1)}%</span>
+                      </span>
+                    </div>
+                  )}
+
+                  <button onClick={addToTrades} disabled={!symbol.trim()} className={`w-full py-2.5 rounded-md font-semibold transition-colors ${symbol.trim() ? 'bg-amber-400 hover:bg-amber-300 text-black' : 'bg-white/5 text-white/30 cursor-not-allowed'}`}>
+                    📋 加入持倉
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+
+      // ============================ POSITIONS PANE ============================
+      const positionsPane = (
+        <div className="space-y-4">
+          {/* Portfolio summary */}
+          {trades.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2 animate-fadeup">
+              {statTile('持倉', openTradesList.length)}
+              {statTile('Risk Free', riskFreeCount, 'text-emerald-400', 'border-emerald-500/25')}
+              {statTile('未實現盈虧', hasLiveUnrealized ? formatCurrency(totalUnrealized, currency) : '—', hasLiveUnrealized ? (totalUnrealized >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-white/30')}
+              {statTile('已平倉', closedTradesList.length)}
+              {statTile('已實現盈虧', closedTradesList.length ? formatCurrency(totalRealized, currency) : '—', closedTradesList.length ? (totalRealized >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-white/30')}
+            </div>
+          )}
+
+          {/* Live quote bar */}
+          {openTradesList.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-white/40">
+                  <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  每 60 秒自動更新 · Finnhub
+                </div>
+                <button onClick={fetchPrices} disabled={loadingPrices} className="text-xs font-mono text-white/70 border border-white/10 rounded-md px-3 py-1.5 hover:bg-white/[0.06] disabled:opacity-50 transition-colors">
+                  {loadingPrices ? '⏳ 更新中' : '🔄 更新報價'}
+                </button>
+              </div>
+              {priceError && <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-red-300 text-sm">❌ {priceError}</div>}
+            </div>
+          )}
+
+          {trades.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/12 bg-[#0f1115] px-6 py-14 text-center animate-fadeup">
+              <p className="text-3xl mb-3 opacity-60">📭</p>
+              <p className="text-white/60">暫無持倉記錄</p>
+              <p className="text-white/35 text-sm mt-1">喺左邊計算器加入新交易</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {sortedTrades.map((trade, idx) => {
+                const metrics = trade.status === 'open' ? getTradeMetrics(trade) : null;
+                const isEditing = editingTrade === trade.id;
+                const isClosing = closingTrade === trade.id;
+                const cur = getSymbolCurrency(trade.symbol);
+                const isClosed = trade.status === 'closed';
+                const rf = metrics?.isRiskFree;
+                const borderState = isClosed
+                  ? (trade.pnl >= 0 ? 'border-emerald-500/30' : 'border-red-500/30')
+                  : rf ? 'border-emerald-500/35' : 'border-white/[0.07]';
+                const rfProgress = Math.max(0, Math.min(100, ((trade.currentStopLoss - trade.initialStopLoss) / (trade.entryPrice - trade.initialStopLoss)) * 100));
+
+                return (
+                  <div key={trade.id} style={{ animationDelay: `${Math.min(idx * 40, 320)}ms` }}
+                    className={`animate-fadeup group rounded-xl border ${borderState} bg-[#0f1115] ${isClosed ? 'opacity-80' : ''} hover:border-white/20 transition-colors`}>
+                    <div className="p-4">
+                      {/* Header row */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-lg text-white tracking-tight">{trade.symbol}</span>
+                          {!isClosed && rf && <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">✅ Risk Free</span>}
+                          {isClosed && <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${trade.pnl >= 0 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25' : 'bg-red-500/15 text-red-300 border-red-500/25'}`}>已平倉</span>}
+                          <span className="text-white/25 text-[11px] font-mono tnum">{new Date(trade.createdAt).toLocaleDateString('en-CA')}</span>
+                        </div>
+                        <div className="text-right shrink-0">
+                          {!isClosed && metrics?.currentPrice ? (
+                            <>
+                              <p className="font-mono tnum text-white text-lg leading-none">{formatCurrency(metrics.currentPrice, cur)}</p>
+                              <p className={`font-mono tnum text-sm mt-1 ${metrics.unrealizedPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {metrics.unrealizedPnL >= 0 ? '+' : ''}{formatCurrency(metrics.unrealizedPnL, cur)} · {formatPercent(metrics.unrealizedPnLPercent)}
+                              </p>
+                            </>
+                          ) : !isClosed ? (
+                            <p className="text-white/30 text-xs font-mono uppercase tracking-wider">無報價</p>
+                          ) : (
+                            <>
+                              <p className="font-mono tnum text-white text-lg leading-none">{formatCurrency(trade.exitPrice, cur)}</p>
+                              <p className={`font-mono tnum text-sm mt-1 ${trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl, cur)}</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Metrics strip */}
+                      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-px rounded-lg overflow-hidden border border-white/[0.06] bg-white/[0.06]">
+                        {cell('入場價', formatCurrency(trade.entryPrice, cur))}
+                        {cell('股數', trade.shares)}
+                        {cell(isClosed ? '初始止損' : '現時止損', formatCurrency(isClosed ? trade.initialStopLoss : trade.currentStopLoss, cur))}
+                        {isClosed
+                          ? cell('盈虧', `${trade.pnl >= 0 ? '+' : ''}${formatCurrency(trade.pnl, cur)}`, trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')
+                          : cell(rf ? '保證利潤' : '風險金額', `${rf ? '+' : '-'}${formatCurrency(Math.abs(metrics?.currentRisk || 0), cur)}`, rf ? 'text-emerald-400' : 'text-red-400')}
+                      </div>
+
+                      {/* Progress to risk-free */}
+                      {!isClosed && !rf && (
+                        <div className="mt-3">
+                          <div className="flex justify-between text-[11px] font-mono text-white/40 mb-1.5">
+                            <span className="uppercase tracking-wider">→ Risk Free</span>
+                            <span className="tnum">差 {formatCurrency(trade.entryPrice - trade.currentStopLoss, cur)}</span>
+                          </div>
+                          <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-amber-400 to-emerald-400" style={{ width: `${rfProgress}%` }} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      {!isClosed ? (
+                        <div className="mt-3">
+                          {isEditing ? (
+                            <div className="flex gap-2">
+                              <input type="number" value={trailingStopInput} onChange={(e) => setTrailingStopInput(e.target.value)} placeholder="新止損價" step="0.01" autoFocus className={`flex-1 ${inputCls} py-2 text-sm`} />
+                              <button onClick={() => updateTrailingStop(trade.id)} className="bg-amber-400 hover:bg-amber-300 text-black font-semibold px-4 rounded-md text-sm transition-colors">✓</button>
+                              <button onClick={() => { setEditingTrade(null); setTrailingStopInput(''); }} className="border border-white/10 text-white/60 hover:text-white px-3 rounded-md text-sm transition-colors">✕</button>
+                            </div>
+                          ) : isClosing ? (
+                            <div className="flex gap-2">
+                              <input type="number" value={exitPriceInput} onChange={(e) => setExitPriceInput(e.target.value)} placeholder="平倉價" step="0.01" autoFocus className={`flex-1 ${inputCls} py-2 text-sm`} />
+                              <button onClick={() => closeTrade(trade.id)} className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold px-4 rounded-md text-sm transition-colors">✓</button>
+                              <button onClick={() => { setClosingTrade(null); setExitPriceInput(''); }} className="border border-white/10 text-white/60 hover:text-white px-3 rounded-md text-sm transition-colors">✕</button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <button onClick={() => { setEditingTrade(trade.id); setTrailingStopInput(trade.currentStopLoss.toString()); }} className="flex-1 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-white/80 text-sm py-2 transition-colors">📈 更新止損</button>
+                              <button onClick={() => setClosingTrade(trade.id)} className="flex-1 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-white/80 text-sm py-2 transition-colors">🏁 平倉</button>
+                              <button onClick={() => deleteTrade(trade.id)} title="刪除" className="px-3 rounded-md border border-white/10 text-white/40 hover:text-red-400 hover:border-red-400/40 transition-colors">🗑️</button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-3 flex justify-end">
+                          <button onClick={() => deleteTrade(trade.id)} className="text-xs text-white/35 hover:text-red-400 border border-white/10 hover:border-red-400/40 rounded-md px-3 py-1.5 transition-colors">🗑️ 刪除持倉</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+
+      // ============================ SHELL ============================
+      const showCalc = activeTab === 'calculator';
+      const showTrades = activeTab === 'trades';
+
+      return (
+        <div className="min-h-screen">
+          {/* Header */}
+          <header className="sticky top-0 z-40 backdrop-blur-md bg-[#0a0b0d]/85 border-b border-white/[0.07]">
+            <div className="mx-auto max-w-[1400px] px-4 lg:px-8 h-14 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="grid place-items-center w-7 h-7 rounded-md bg-amber-400/15 border border-amber-400/30 text-amber-400 text-xs">▲</span>
+                <span className="font-semibold tracking-tight text-white truncate">倉位計算器</span>
+                <span className="hidden lg:inline text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 border-l border-white/10 pl-2.5">Position Sizer</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={toggleCurrency} className="text-xs font-mono text-white/70 border border-white/10 rounded-md px-2.5 py-1.5 hover:bg-white/[0.06] transition-colors">
+                  {currency === 'USD' ? '🇺🇸 USD' : '🇭🇰 HKD'}
+                </button>
+                {user ? (
+                  <div className="flex items-center gap-2">
+                    {syncStatus && <span className="hidden sm:inline text-[11px] font-mono text-amber-300/80">{syncStatus}</span>}
+                    <span className="hidden md:inline text-xs text-white/45 font-mono truncate max-w-[150px]">{user.email}</span>
+                    <button onClick={signOut} className="text-xs text-white/50 hover:text-red-400 border border-white/10 hover:border-red-400/40 rounded-md px-2.5 py-1.5 transition-colors">登出</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowAuthModal(true)} className="text-xs font-semibold text-black bg-amber-400 hover:bg-amber-300 rounded-md px-3 py-1.5 transition-colors">🔐 登入 / 註冊</button>
+                )}
+              </div>
+            </div>
+          </header>
+
+          {/* Main */}
+          <main className="mx-auto max-w-[1400px] px-4 lg:px-8 py-5 lg:py-7">
+            {/* Mobile tab switcher */}
+            <div className="lg:hidden grid grid-cols-2 gap-2 mb-5">
+              <button onClick={() => setActiveTab('calculator')} className={`py-2.5 rounded-lg text-sm font-medium transition-colors ${showCalc ? segActive : 'bg-white/[0.04] text-white/55 border border-white/10'}`}>🧮 計算器</button>
+              <button onClick={() => setActiveTab('trades')} className={`relative py-2.5 rounded-lg text-sm font-medium transition-colors ${showTrades ? segActive : 'bg-white/[0.04] text-white/55 border border-white/10'}`}>
+                📋 持倉
+                {openTradesList.length > 0 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-mono w-5 h-5 rounded-full flex items-center justify-center">{openTradesList.length}</span>}
+              </button>
+            </div>
+
+            <div className="grid lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+              {/* Calculator rail */}
+              <section className={`${showCalc ? 'block' : 'hidden'} lg:block lg:col-span-5 xl:col-span-4`}>
+                <div className="lg:sticky lg:top-20">
+                  {calculatorPane}
+                </div>
+              </section>
+
+              {/* Positions blotter */}
+              <section className={`${showTrades ? 'block' : 'hidden'} lg:block lg:col-span-7 xl:col-span-8`}>
+                <div className="hidden lg:flex items-center justify-between mb-3">
+                  <h2 className="font-semibold text-white tracking-tight flex items-center gap-2">📋 持倉組合</h2>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">Portfolio</span>
+                </div>
+                {positionsPane}
+              </section>
+            </div>
+
+            <div className="mt-8 text-center text-white/25 text-[11px] font-mono uppercase tracking-[0.15em]">報價來源 Finnhub · 每 60 秒自動更新</div>
+          </main>
+
+          {/* Auth Modal */}
+          {showAuthModal && !user && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-[#0f1115] rounded-xl p-6 w-full max-w-sm border border-white/10 animate-fadeup">
+                <div className="flex justify-between items-center mb-5">
+                  <h2 className="text-white font-semibold text-lg tracking-tight">{authMode === 'login' ? '登入' : '註冊'}</h2>
+                  <button onClick={() => { setShowAuthModal(false); setAuthError(''); }} className="text-white/40 hover:text-white transition-colors">✕</button>
+                </div>
+
+                <form onSubmit={handleAuth} className="space-y-4">
+                  <div>
+                    <label className={labelCls}>Email</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>密碼</label>
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className={inputCls} />
+                  </div>
+
+                  {authError && (
+                    <div className={`text-sm px-3 py-2 rounded-md border ${authError.includes('成功') ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25' : 'bg-red-500/10 text-red-300 border-red-500/25'}`}>
+                      {authError}
+                    </div>
+                  )}
+
+                  <button type="submit" className="w-full bg-amber-400 hover:bg-amber-300 text-black py-2.5 rounded-md font-semibold transition-colors">
+                    {authMode === 'login' ? '登入' : '註冊'}
+                  </button>
+                </form>
+
+                <div className="mt-4 text-center">
+                  <button onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(''); }} className="text-white/45 text-sm hover:text-white transition-colors">
+                    {authMode === 'login' ? '未有帳戶？註冊' : '已有帳戶？登入'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
