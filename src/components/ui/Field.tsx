@@ -1,4 +1,5 @@
 'use client';
+import { useId } from 'react';
 import styled from 'styled-components';
 
 const Label = styled.label`
@@ -16,5 +17,6 @@ const Input = styled.input`
 
 interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> { label: string; }
 export default function Field({ label, ...props }: FieldProps) {
-  return (<div><Label>{label}</Label><Input {...props} /></div>);
+  const id = useId();
+  return (<div><Label htmlFor={id}>{label}</Label><Input id={id} {...props} /></div>);
 }

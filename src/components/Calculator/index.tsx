@@ -87,7 +87,7 @@ const Seg = styled.button<{ $active: boolean }>`
   flex: 1; padding: 6px 0; border: none; border-radius: 4px; cursor: pointer;
   font-size: 13px; font-family: inherit; transition: background 0.15s, color 0.15s;
   background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#000' : theme.colors.textMuted};
+  color: ${({ $active, theme }) => $active ? theme.colors.accentText : theme.colors.textMuted};
   font-weight: ${({ $active }) => $active ? 600 : 400};
 `;
 
@@ -216,7 +216,7 @@ const AddBtn = styled.button<{ $enabled: boolean }>`
   cursor: ${({ $enabled }) => $enabled ? 'pointer' : 'not-allowed'};
   transition: background 0.15s;
   background: ${({ $enabled, theme }) => $enabled ? theme.colors.accent : `${theme.colors.textMuted}20`};
-  color: ${({ $enabled, theme }) => $enabled ? '#000' : theme.colors.textMuted};
+  color: ${({ $enabled, theme }) => $enabled ? theme.colors.accentText : theme.colors.textMuted};
 `;
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -290,7 +290,7 @@ export default function Calculator() {
     <Card>
       <CardHeader>
         <CardTitle>🧮 {t('title')}</CardTitle>
-        <CardTag>Sizer</CardTag>
+        <CardTag>{t('sizerTag')}</CardTag>
       </CardHeader>
 
       <Body>

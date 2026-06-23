@@ -47,7 +47,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         setEmail(''); setPassword('');
       }
     } catch (err) {
-      setMsg({ ok: false, text: err instanceof Error ? err.message : 'Error' });
+      setMsg({ ok: false, text: err instanceof Error ? err.message : t('error') });
     }
   };
 

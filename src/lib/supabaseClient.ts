@@ -16,8 +16,12 @@ export function getSupabaseClient(): SupabaseClient {
 }
 
 // Convenience proxy — behaves like the old `supabase` export but is lazily resolved.
+// The `get` trap binds functions to the real client so that @supabase/supabase-js v2
+// private class fields are always accessed with the correct `this` receiver.
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop) {
-    return (getSupabaseClient() as unknown as Record<string | symbol, unknown>)[prop];
+    const client = getSupabaseClient();
+    const value = Reflect.get(client as object, prop, client);
+    return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(client) : value;
   },
 });
