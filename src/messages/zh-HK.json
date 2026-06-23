@@ -41,7 +41,8 @@
     "potentialProfit": "潛在盈利",
     "addTrade": "加入持倉",
     "sizerTag": "Sizer",
-    "fullPositionLabel": "1 Full Position = % 風險"
+    "fullPositionLabel": "1 Full Position = % 風險",
+    "openChart": "📈 睇圖"
   },
   "summary": {
     "currentNav": "現時 NAV",

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import styled from 'styled-components';
 import { useAtom, useAtomValue } from 'jotai';
 import { useTranslations } from 'next-intl';
@@ -11,6 +12,11 @@ import { currencyAtom } from '@/store/currencyAtom';
 import { capitalAtom } from '@/store/capitalAtom';
 import { fullPositionPctAtom } from '@/store/fullPositionAtom';
 import type { Trade } from '@/types/trade';
+
+const StopTargetChartDialog = dynamic(
+  () => import('@/components/Chart/StopTargetChartDialog'),
+  { ssr: false },
+);
 
 // ── Styled components ────────────────────────────────────────────────────────
 
@@ -221,6 +227,17 @@ const AddBtn = styled.button<{ $enabled: boolean }>`
   color: ${({ $enabled, theme }) => $enabled ? theme.colors.accentText : theme.colors.textMuted};
 `;
 
+const ChartBtn = styled.button`
+  margin-top: 8px;
+  padding: 6px 12px; border: none; border-radius: 6px;
+  font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  background: ${({ theme }) => `${theme.colors.accent}20`};
+  color: ${({ theme }) => theme.colors.accent};
+  &:disabled { cursor: not-allowed; opacity: 0.4; }
+  &:not(:disabled):hover { background: ${({ theme }) => `${theme.colors.accent}35`}; }
+`;
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function Calculator() {
@@ -237,10 +254,13 @@ export default function Calculator() {
   const [stopLossType, setStopLossType] = useState<'price' | 'percent'>('price');
   const [stopLoss, setStopLoss] = useState('');
   const [stopLossPercent, setStopLossPercent] = useState('');
+  const [chartOpen, setChartOpen] = useState(false);
 
   const stop = stopLossType === 'price'
     ? parseFloat(stopLoss)
     : parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100);
+
+  const stopForChart = isNaN(stop) ? null : stop;
 
   const result = useMemo(
     () => calculatePosition({
@@ -392,6 +412,14 @@ export default function Calculator() {
               = {formatCurrency(parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100), symCur, currency)}
             </StopHint>
           )}
+
+          <ChartBtn
+            type="button"
+            disabled={!symbol.trim()}
+            onClick={() => setChartOpen(true)}
+          >
+            {t('openChart')}
+          </ChartBtn>
         </FieldWrap>
         {/* Full-Position % setting */}
         <FieldWrap>
@@ -409,6 +437,17 @@ export default function Calculator() {
           </InpRelative>
         </FieldWrap>
       </Body>
+
+      <StopTargetChartDialog
+        open={chartOpen}
+        symbol={symbol}
+        buyPrice={parseFloat(buyPrice) || null}
+        stop={stopForChart}
+        target={parseFloat(targetPrice) || null}
+        onPickStop={(p) => { setStopLossType('price'); setStopLoss(p.toFixed(2)); }}
+        onPickTarget={(p) => setTargetPrice(p.toFixed(2))}
+        onClose={() => setChartOpen(false)}
+      />
 
       {/* Results */}
       {hasResult && (

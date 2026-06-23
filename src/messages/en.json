@@ -41,7 +41,8 @@
     "potentialProfit": "Potential Profit",
     "addTrade": "Add Position",
     "sizerTag": "Sizer",
-    "fullPositionLabel": "1 Full Position = % risk"
+    "fullPositionLabel": "1 Full Position = % risk",
+    "openChart": "📈 Chart"
   },
   "summary": {
     "currentNav": "NAV",
