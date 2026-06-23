@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { useTranslations } from 'next-intl';
 import { calculatePosition } from '@/lib/finance';
 import { formatCurrency, getSymbolCurrency } from '@/lib/format';
 import { useTrades } from '@/hooks/useTrades';
 import { currencyAtom } from '@/store/currencyAtom';
+import { capitalAtom } from '@/store/capitalAtom';
+import { fullPositionPctAtom } from '@/store/fullPositionAtom';
 import type { Trade } from '@/types/trade';
 
 // ── Styled components ────────────────────────────────────────────────────────
@@ -227,7 +229,8 @@ export default function Calculator() {
   const { addTrade } = useTrades();
 
   const [symbol, setSymbol] = useState('');
-  const [capital, setCapital] = useState('128000');
+  const [capital, setCapital] = useAtom(capitalAtom);
+  const [fullPositionPct, setFullPositionPct] = useAtom(fullPositionPctAtom);
   const [maxLossPercent, setMaxLossPercent] = useState('0.5');
   const [buyPrice, setBuyPrice] = useState('');
   const [targetPrice, setTargetPrice] = useState('');
@@ -389,6 +392,21 @@ export default function Calculator() {
               = {formatCurrency(parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100), symCur, currency)}
             </StopHint>
           )}
+        </FieldWrap>
+        {/* Full-Position % setting */}
+        <FieldWrap>
+          <Lbl>{t('fullPositionLabel')}</Lbl>
+          <InpRelative>
+            <Inp
+              type="number"
+              value={fullPositionPct}
+              step="0.1"
+              min="0"
+              max="100"
+              onChange={(e) => setFullPositionPct(parseFloat(e.target.value) || 0)}
+            />
+            <PctSuffix>%</PctSuffix>
+          </InpRelative>
         </FieldWrap>
       </Body>
 

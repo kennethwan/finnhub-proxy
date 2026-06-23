@@ -40,7 +40,8 @@
     "riskAmount": "Risk Amount",
     "potentialProfit": "Potential Profit",
     "addTrade": "Add Position",
-    "sizerTag": "Sizer"
+    "sizerTag": "Sizer",
+    "fullPositionLabel": "1 Full Position = % risk"
   },
   "summary": {
     "currentNav": "NAV",
