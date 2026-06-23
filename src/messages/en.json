@@ -76,7 +76,8 @@
     "exitPlaceholder": "Exit price",
     "noQuote": "No Quote",
     "days": "days",
-    "unrealized": "Unrealized"
+    "unrealized": "Unrealized",
+    "chart": "📈 Chart"
   },
   "history": {
     "realized": "Realized P/L",

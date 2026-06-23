@@ -76,7 +76,8 @@
     "exitPlaceholder": "平倉價",
     "noQuote": "無報價",
     "days": "日",
-    "unrealized": "未實現"
+    "unrealized": "未實現",
+    "chart": "📈 圖表"
   },
   "history": {
     "realized": "已實現 P/L",

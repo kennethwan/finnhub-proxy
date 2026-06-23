@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import styled from 'styled-components';
 import { useAtomValue } from 'jotai';
 import { useTranslations } from 'next-intl';
@@ -11,6 +12,8 @@ import { currencyAtom } from '@/store/currencyAtom';
 import { fullPositionPctAtom } from '@/store/fullPositionAtom';
 import { capitalAtom } from '@/store/capitalAtom';
 import type { Trade } from '@/types/trade';
+
+const TradeChartDialog = dynamic(() => import('@/components/Chart/TradeChartDialog'), { ssr: false });
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -360,6 +363,7 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
 
   const [mode, setMode] = useState<CardMode>('view');
   const [input, setInput] = useState('');
+  const [chartOpen, setChartOpen] = useState(false);
 
   const cur = getSymbolCurrency(trade.symbol);
 
@@ -548,12 +552,24 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
             >
               🏁 {t('close')}
             </ActionBtn>
+            <ActionBtn
+              onClick={() => setChartOpen(true)}
+            >
+              {t('chart')}
+            </ActionBtn>
             <IconBtn onClick={() => onDelete(trade.id)} title={t('delete')}>
               🗑️
             </IconBtn>
           </>
         )}
       </ActionsRow>
+
+      <TradeChartDialog
+        open={chartOpen}
+        trade={trade}
+        currentPrice={m.marketPrice}
+        onClose={() => setChartOpen(false)}
+      />
     </Card>
   );
 }
