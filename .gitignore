@@ -3,6 +3,11 @@ node_modules
 .DS_Store
 .next/
 
+# Next.js / TypeScript / test build artifacts
+next-env.d.ts
+*.tsbuildinfo
+/coverage
+
 # Android
 android/.gradle/
 android/build/
