@@ -62,7 +62,8 @@ src/lib/supabaseClient.ts  src/lib/format.ts (+test)  src/lib/finance.ts (+test)
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -84,6 +85,7 @@ src/lib/supabaseClient.ts  src/lib/format.ts (+test)  src/lib/finance.ts (+test)
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^9.39.2",
     "eslint-config-next": "16.1.1",
     "jsdom": "^25.0.1",
@@ -1402,8 +1404,8 @@ Expected: header shows `▲ 倉位計算器`, currency/lang/theme buttons. Click
 
 Run: `pnpm build`
 Expected: build succeeds (routes `/[locale]`, `/api/quotes`, `/api/candles` compiled).
-Run: `pnpm test`
-Expected: all lib tests PASS, coverage ≥80% on `src/lib/**`.
+Run: `pnpm test:coverage`
+Expected: all lib tests PASS; coverage ≥80% lines/functions on `src/lib/**` (Vitest exits non-zero if below threshold).
 
 - [ ] **Step 6: Commit**
 
