@@ -1,1 +1,1 @@
-{ "app": { "title": "倉位計算器", "subtitle": "Position Sizer" }, "header": { "theme": "主題", "language": "語言" } }
+{ "app": { "title": "倉位計算器", "subtitle": "Position Sizer" }, "header": { "theme": "主題", "language": "語言" }, "auth": { "login": "登入", "signup": "註冊", "email": "Email", "password": "密碼", "toSignup": "未有帳戶？註冊", "toLogin": "已有帳戶？登入", "signupSuccess": "註冊成功！請檢查你嘅 email 確認帳戶。", "cta": "🔐 登入 / 註冊" } }

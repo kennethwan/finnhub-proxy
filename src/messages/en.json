@@ -1,1 +1,1 @@
-{ "app": { "title": "Position Sizer", "subtitle": "Risk Dashboard" }, "header": { "theme": "Theme", "language": "Language" } }
+{ "app": { "title": "Position Sizer", "subtitle": "Risk Dashboard" }, "header": { "theme": "Theme", "language": "Language" }, "auth": { "login": "Log In", "signup": "Sign Up", "email": "Email", "password": "Password", "toSignup": "No account? Sign up", "toLogin": "Already have an account? Log in", "signupSuccess": "Sign up successful! Please check your email to confirm your account.", "cta": "🔐 Log In / Sign Up" } }
