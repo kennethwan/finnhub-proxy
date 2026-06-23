@@ -1,1 +1,92 @@
-{ "app": { "title": "倉位計算器", "subtitle": "Position Sizer" }, "header": { "theme": "主題", "language": "語言" }, "auth": { "login": "登入", "signup": "註冊", "email": "Email", "password": "密碼", "toSignup": "未有帳戶？註冊", "toLogin": "已有帳戶？登入", "signupSuccess": "註冊成功！請檢查你嘅 email 確認帳戶。", "cta": "🔐 登入 / 註冊", "logout": "登出", "error": "錯誤" }, "calculator": { "title": "持倉計算器", "symbol": "🏷️ 股票代號", "capital": "💰 總本金", "maxLoss": "⚠️ 最大虧損 %", "buyPrice": "🎯 買入價", "targetPrice": "🎯 目標價", "optional": "選填", "stopLoss": "🛑 止損", "price": "價格", "percent": "百分比", "stopPricePlaceholder": "止損價", "suggestedShares": "建議買入", "shares": "股", "requiredCapital": "所需資金", "ofCapital": "本金", "riskReward": "風險回報 R:R", "stopPrice": "止損價", "riskAmount": "風險金額", "potentialProfit": "潛在盈利", "addTrade": "加入持倉", "sizerTag": "Sizer" }, "summary": { "currentNav": "現時 NAV", "totalPL": "總盈虧", "unrealized": "未實現", "realized": "已實現", "pctInvested": "% 投入", "numStock": "股票數", "osFp": "O/S FP", "sdd": "SDD", "mdd": "MDD" }, "card": { "status": { "riskFree": "無風險", "atRisk": "有風險" }, "entry": "入場價", "shares": "股數", "allocated": "已分配", "ofCapital": "本金佔比", "ptnSizing": "倉位大小", "currentStop": "現時止損", "risk": "風險", "guaranteedProfit": "保證利潤", "toRiskFree": "→ 無風險", "updateStop": "更新止損", "close": "平倉", "delete": "刪除", "newStopPlaceholder": "新止損價", "exitPlaceholder": "平倉價", "noQuote": "無報價", "days": "日", "unrealized": "未實現" } }
+{
+  "app": {
+    "title": "倉位計算器",
+    "subtitle": "Position Sizer"
+  },
+  "header": {
+    "theme": "主題",
+    "language": "語言"
+  },
+  "auth": {
+    "login": "登入",
+    "signup": "註冊",
+    "email": "Email",
+    "password": "密碼",
+    "toSignup": "未有帳戶？註冊",
+    "toLogin": "已有帳戶？登入",
+    "signupSuccess": "註冊成功！請檢查你嘅 email 確認帳戶。",
+    "cta": "🔐 登入 / 註冊",
+    "logout": "登出",
+    "error": "錯誤"
+  },
+  "calculator": {
+    "title": "持倉計算器",
+    "symbol": "🏷️ 股票代號",
+    "capital": "💰 總本金",
+    "maxLoss": "⚠️ 最大虧損 %",
+    "buyPrice": "🎯 買入價",
+    "targetPrice": "🎯 目標價",
+    "optional": "選填",
+    "stopLoss": "🛑 止損",
+    "price": "價格",
+    "percent": "百分比",
+    "stopPricePlaceholder": "止損價",
+    "suggestedShares": "建議買入",
+    "shares": "股",
+    "requiredCapital": "所需資金",
+    "ofCapital": "本金",
+    "riskReward": "風險回報 R:R",
+    "stopPrice": "止損價",
+    "riskAmount": "風險金額",
+    "potentialProfit": "潛在盈利",
+    "addTrade": "加入持倉",
+    "sizerTag": "Sizer"
+  },
+  "summary": {
+    "currentNav": "現時 NAV",
+    "totalPL": "總盈虧",
+    "unrealized": "未實現",
+    "realized": "已實現",
+    "pctInvested": "% 投入",
+    "numStock": "股票數",
+    "osFp": "O/S FP",
+    "sdd": "SDD",
+    "mdd": "MDD"
+  },
+  "card": {
+    "status": {
+      "riskFree": "無風險",
+      "atRisk": "有風險"
+    },
+    "entry": "入場價",
+    "shares": "股數",
+    "allocated": "已分配",
+    "ofCapital": "本金佔比",
+    "ptnSizing": "倉位大小",
+    "currentStop": "現時止損",
+    "risk": "風險",
+    "guaranteedProfit": "保證利潤",
+    "toRiskFree": "→ 無風險",
+    "updateStop": "更新止損",
+    "close": "平倉",
+    "delete": "刪除",
+    "newStopPlaceholder": "新止損價",
+    "exitPlaceholder": "平倉價",
+    "noQuote": "無報價",
+    "days": "日",
+    "unrealized": "未實現"
+  },
+  "history": {
+    "realized": "已實現 P/L",
+    "count": "已平倉",
+    "winLoss": "勝/負",
+    "winRate": "勝率",
+    "avgR": "平均 R",
+    "best": "最佳",
+    "worst": "最差",
+    "exit": "平倉",
+    "holdDays": "持有日數",
+    "win": "勝",
+    "loss": "負"
+  }
+}
