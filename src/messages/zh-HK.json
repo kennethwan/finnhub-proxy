@@ -1,1 +1,1 @@
-{ "app": { "title": "倉位計算器", "subtitle": "Position Sizer" } }
+{ "app": { "title": "倉位計算器", "subtitle": "Position Sizer" }, "header": { "theme": "主題", "language": "語言" } }

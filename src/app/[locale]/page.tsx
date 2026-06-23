@@ -1,15 +1,10 @@
-import { useTranslations } from 'next-intl';
+import Header from '@/components/Header';
 
 export default function DashboardPage() {
-  return <Placeholder />;
-}
-
-function Placeholder() {
-  const t = useTranslations('app');
   return (
-    <main style={{ padding: 32 }}>
-      <h1>{t('title')}</h1>
-      <p>{t('subtitle')}</p>
-    </main>
+    <>
+      <Header />
+      <main style={{ padding: 24 }}>Dashboard coming soon…</main>
+    </>
   );
 }

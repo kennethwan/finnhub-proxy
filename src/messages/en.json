@@ -1,1 +1,1 @@
-{ "app": { "title": "Position Sizer", "subtitle": "Risk Dashboard" } }
+{ "app": { "title": "Position Sizer", "subtitle": "Risk Dashboard" }, "header": { "theme": "Theme", "language": "Language" } }
