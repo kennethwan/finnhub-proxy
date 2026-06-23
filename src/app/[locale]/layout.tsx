@@ -17,14 +17,6 @@ export default async function LocaleLayout({
   const messages = await getMessages();
   return (
     <html lang={locale} suppressHydrationWarning>
-      <head>
-        {/* Anti-flash: set page background + color-scheme from stored theme before first paint (spec §10) */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme-mode');if(t!=='light'&&t!=='dark')t='dark';var e=document.documentElement;e.style.background=t==='light'?'#f7f7f5':'#0a0b0d';e.style.colorScheme=t;}catch(e){}})();`,
-          }}
-        />
-      </head>
       <body>
         <Providers locale={locale} messages={messages as Record<string, unknown>}>
           {children}
