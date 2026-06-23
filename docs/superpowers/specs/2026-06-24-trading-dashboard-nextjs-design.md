@@ -275,3 +275,12 @@ next-intl,locales=`['zh-HK','en']`,預設 `zh-HK`。UI 字串入 `messages/zh-HK
 3. `fullPositionPct` 預設 0.5%,UI 可改。
 4. Key-level 參數沿用 Android(lookback 5 / prominence 2% / dedup 1.5% / 取 5);阻力位用對稱算法。止賺 = 阻力位 × 0.995(同止損慣例)。
 5. Light theme 顏色待視覺確認(對比度)。
+
+---
+
+## 17. Known Limitations → Plan 5 (light-theme polish) 待辦
+
+落地 Plan 1 後,code review 揾出兩個 light/dark 相關嘅 polish 項,**已知並延後**至 Plan 5:
+
+1. **Theme FOUC(light mode)** — 而家用 `atomWithStorage`(post-mount effect 讀 localStorage),server 同 client 首 render 都係 `dark`,所以**冇 hydration mismatch**,但 light-mode 用家首次載入會閃一閃 dark→light。試過 `getOnInit:true` + inline `<head>` script,但 `getOnInit` 會令 client 首 render 同 dark SSR tree 分歧,**爆 styled-components hydration error**(已 revert)。真正 flash-free = **cookie-based SSR theme**(server 讀 cookie → render 正確 theme),Plan 5 處理。
+2. **Light accent 對比度** — `accent #d97706` 喺白底 ≈ 3.1:1,只過 WCAG AA-Large(裝飾用 OK,唔好做正文)。Plan 5 微調。

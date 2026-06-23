@@ -416,6 +416,11 @@ export default function StyledComponentsRegistry({ children }: { children: React
 import { atomWithStorage } from 'jotai/utils';
 
 export type ThemeMode = 'dark' | 'light';
+// NOTE: plain atomWithStorage (reads localStorage in a post-mount effect) → server and client
+// first render both produce 'dark', so NO hydration mismatch. A light-mode user sees a brief FOUC.
+// Fully flash-free theming requires cookie-based SSR (read the cookie server-side, render the right
+// theme) — deferred to Plan 5 light-theme polish. Do NOT use getOnInit here: it diverges the
+// client's first render from the dark SSR tree and throws a styled-components hydration error.
 export const themeAtom = atomWithStorage<ThemeMode>('theme-mode', 'dark');
 ```
 
@@ -580,6 +585,10 @@ export default async function LocaleLayout({
     </html>
   );
 }
+
+// NOTE (theme FOUC): an inline anti-flash <head> script was attempted but is ineffective here —
+// the visible background comes from styled-components GlobalStyle on <body>, which still renders
+// 'dark' on the client's first paint. Proper flash-free theming = cookie-based SSR (Plan 5).
 ```
 
 - [ ] **Step 6: Create `src/app/[locale]/page.tsx`** (placeholder)
@@ -953,7 +962,7 @@ export function portfolioStats(trades: Trade[], opts: PortfolioOpts): PortfolioS
       hasLiveUnrealized = true;
     }
     sddUsd += convertCurrency((t.currentStopLoss - t.entryPrice) * t.shares, cur, display);
-    osFpRisk += Math.max(0, (t.entryPrice - t.currentStopLoss) * t.shares);
+    osFpRisk += convertCurrency(Math.max(0, (t.entryPrice - t.currentStopLoss) * t.shares), cur, display);
   }
   for (const t of closed) {
     realized += convertCurrency(t.pnl ?? 0, getSymbolCurrency(t.symbol), display);
@@ -1352,6 +1361,7 @@ const Btn = styled.button`
 
 export default function Header() {
   const t = useTranslations('app');
+  const th = useTranslations('header'); // header.theme / header.language live in the 'header' namespace
   const [mode, setMode] = useAtom(themeAtom);
   const [currency, setCurrency] = useAtom(currencyAtom);
   const locale = useLocale();
@@ -1360,18 +1370,18 @@ export default function Header() {
 
   const switchLocale = () => {
     const next = locales.find((l) => l !== locale) ?? locale;
-    router.push(pathname.replace(`/${locale}`, `/${next}`));
+    router.push(pathname.replace(new RegExp(`^/${locale}(?=/|$)`), `/${next}`));
   };
 
   return (
     <Bar>
       <Brand>▲ {t('title')}</Brand>
       <div style={{ display: 'flex', gap: 8 }}>
-        <Btn onClick={() => setCurrency(currency === 'USD' ? 'HKD' : 'USD')}>
+        <Btn onClick={() => setCurrency(currency === 'USD' ? 'HKD' : 'USD')} aria-label={`${currency} currency`}>
           {currency === 'USD' ? '🇺🇸 USD' : '🇭🇰 HKD'}
         </Btn>
-        <Btn onClick={switchLocale}>{locale === 'zh-HK' ? 'EN' : '中'}</Btn>
-        <Btn onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} aria-label="theme">
+        <Btn onClick={switchLocale} aria-label={th('language')}>{locale === 'zh-HK' ? 'EN' : '中'}</Btn>
+        <Btn onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} aria-label={th('theme')}>
           {mode === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </Btn>
       </div>
