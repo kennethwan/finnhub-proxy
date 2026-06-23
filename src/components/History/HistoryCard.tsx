@@ -8,6 +8,7 @@ import { tradeMetrics } from '@/lib/finance';
 import { formatCurrency, getSymbolCurrency } from '@/lib/format';
 import { currencyAtom } from '@/store/currencyAtom';
 import { capitalAtom } from '@/store/capitalAtom';
+import { fullPositionPctAtom } from '@/store/fullPositionAtom';
 import type { Trade } from '@/types/trade';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -174,6 +175,7 @@ export default function HistoryCard({ trade, onDelete }: HistoryCardProps) {
   const th = useTranslations('history');
   const currency = useAtomValue(currencyAtom);
   const capital = useAtomValue(capitalAtom);
+  const fullPositionPct = useAtomValue(fullPositionPctAtom);
 
   // SSR-safe timestamp
   const [now, setNow] = useState(() => Date.now());
@@ -186,7 +188,7 @@ export default function HistoryCard({ trade, onDelete }: HistoryCardProps) {
   const m = tradeMetrics(trade, {
     currentPrice: null,
     capital: parseFloat(capital) || 0,
-    fullPositionPct: 0.5,
+    fullPositionPct,
     now,
   });
 

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
           pc: q.regularMarketPreviousClose, t: Math.floor(Date.now() / 1000),
         };
       } else {
-        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}`, {
+        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}`, {
           headers: { 'X-Finnhub-Token': apiKey },
         });
         results[symbol] = await res.json();
