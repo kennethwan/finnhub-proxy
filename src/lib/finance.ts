@@ -119,7 +119,7 @@ export function portfolioStats(trades: Trade[], opts: PortfolioOpts): PortfolioS
       hasLiveUnrealized = true;
     }
     sddUsd += convertCurrency((t.currentStopLoss - t.entryPrice) * t.shares, cur, display);
-    osFpRisk += Math.max(0, (t.entryPrice - t.currentStopLoss) * t.shares);
+    osFpRisk += convertCurrency(Math.max(0, (t.entryPrice - t.currentStopLoss) * t.shares), cur, display);
   }
   for (const t of closed) {
     realized += convertCurrency(t.pnl ?? 0, getSymbolCurrency(t.symbol), display);

@@ -71,6 +71,19 @@ describe('portfolioStats', () => {
     expect(s.sdd).toBeCloseTo(-640, 2);
     expect(s.mdd).toBeCloseTo(-640 - 18968.32, 2);
   });
+  it('converts osFp risk to display currency for .HK symbols', () => {
+    const hk: Trade = {
+      id: 9, symbol: '0700.HK', entryPrice: 390, shares: 100,
+      initialStopLoss: 380, currentStopLoss: 380, targetPrice: null,
+      status: 'open', riskAmount: 1000, createdAt: '2026-06-10T00:00:00Z', stopLossHistory: [],
+    };
+    const s = portfolioStats([hk], {
+      prices: { '0700.HK': { price: 400, change: 0, changePercent: 0, updatedAt: '' } },
+      capital: 128000, fullPositionPct: 0.5, display: 'USD',
+    });
+    // native risk 1000 HKD -> 1000/7.8 USD, over 1FP$ = 0.5% * 128000 = 640
+    expect(s.osFp).toBeCloseTo((1000 / 7.8) / 640, 5); // ~0.2003, NOT 1.5625
+  });
 });
 
 describe('historyStats', () => {
@@ -85,5 +98,8 @@ describe('historyStats', () => {
     expect(h.losses).toBe(1);
     expect(h.winRate).toBeCloseTo(50, 4);
     expect(h.realized).toBeCloseTo(1920, 2);
+    expect(h.avgR).toBeCloseTo(1.5, 6);  // ((170-150)/5 + (145-150)/5)/2
+    expect(h.best).toBe(2560);
+    expect(h.worst).toBe(-640);
   });
 });
