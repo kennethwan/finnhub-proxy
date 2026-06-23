@@ -1,50 +1,25 @@
-# 股票倉位計算器
+# 倉位計算器 · Position Sizer
 
-一個幫你計算應該買幾多股嘅工具，包含實時報價同 Risk Free 追蹤。
+A risk-management trading dashboard (Next.js 16 + TypeScript + styled-components + jotai + next-intl).
+Position sizing, live positions with NAV/exposure/drawdown, history, charts with key-level stop/target.
 
-## 功能
+## Develop
+- `pnpm install`
+- copy `.env.example` → `.env` and fill the values
+- `pnpm dev` → http://localhost:3000
+- `pnpm test` (Vitest), `pnpm build`, `pnpm lint`
 
-- 🧮 根據風險管理計算應買股數
-- 📊 實時股價（Finnhub API）
-- 📈 Trailing Stop 追蹤
-- ✅ Risk Free 狀態監控
-- 💾 本地儲存交易記錄
+## Environment variables
+| var | purpose | scope |
+|---|---|---|
+| `FINNHUB_API_KEY` | US quotes via Finnhub (`/api/quotes`) | server |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | client |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | client |
 
-## Android App
+`.HK` symbols are priced via yahoo-finance2; others via Finnhub. Charts use `/api/candles` (yahoo-finance2).
 
-Native Kotlin + Jetpack Compose port — feature parity with the web app,
-sharing the same Vercel quote proxy and Supabase account/trades. See
-[android/README.md](android/README.md) for build + sideload instructions.
+## Deploy (Vercel)
+Vercel auto-detects Next.js. **Set the three env vars above in the Vercel project** (the same `/api/quotes` + `/api/candles` endpoints serve the Android app, so keep them stable). The `android/` directory is a separate Kotlin app and is ignored by the web build.
 
-## 部署到 Vercel
-
-### 1. Push 到 GitHub
-
-```bash
-git init
-git add .
-git commit -m "stock calculator"
-git branch -M main
-git remote add origin https://github.com/你的用戶名/stock-calculator.git
-git push -u origin main
-```
-
-### 2. 喺 Vercel Import
-
-1. 去 [vercel.com/new](https://vercel.com/new)
-2. Import 你嘅 GitHub repo
-3. **Environment Variables** 加入：
-   - `FINNHUB_API_KEY` = `你的 API Key`
-4. Deploy
-
-### 3. 完成！
-
-你會得到 URL 例如：`https://stock-calculator-xxx.vercel.app`
-
-## 本地開發
-
-```bash
-# 需要 Vercel CLI
-npm i -g vercel
-vercel dev
-```
+## Structure
+`src/app/[locale]` (App Router + next-intl) · `src/components` · `src/store` (jotai) · `src/hooks` · `src/lib` (`finance`, `keyLevels`, `format` — pure + unit-tested) · `src/styles` (light/dark theme).
