@@ -8,6 +8,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    coverage: { include: ['src/lib/**'], thresholds: { lines: 80, functions: 80 } },
+    coverage: { provider: 'v8', include: ['src/lib/**'], thresholds: { lines: 80, functions: 80 } },
   },
 });
