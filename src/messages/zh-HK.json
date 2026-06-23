@@ -96,5 +96,11 @@
     "refresh": "刷新",
     "updating": "更新中…",
     "empty": "暫無持倉。請使用上方計算器添加。"
+  },
+  "nav": {
+    "calculator": "計算器",
+    "positions": "持倉",
+    "history": "歷史",
+    "footer": "報價來源 Finnhub · 每 60 秒自動更新"
   }
 }

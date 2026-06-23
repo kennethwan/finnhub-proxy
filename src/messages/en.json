@@ -96,5 +96,11 @@
     "refresh": "Refresh",
     "updating": "Updating…",
     "empty": "No open positions. Add one using the calculator above."
+  },
+  "nav": {
+    "calculator": "Calculator",
+    "positions": "Positions",
+    "history": "History",
+    "footer": "Quotes by Finnhub · auto-updates every 60s"
   }
 }
