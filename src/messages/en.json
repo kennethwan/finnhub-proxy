@@ -114,6 +114,8 @@
     "loadError": "Load failed",
     "noData": "No historical data",
     "done": "Done",
-    "rMultiples": "R Multiples"
+    "rMultiples": "R Multiples",
+    "now": "Now",
+    "pnl": "P&L"
   }
 }

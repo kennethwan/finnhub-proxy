@@ -114,6 +114,8 @@
     "loadError": "載入失敗",
     "noData": "冇歷史數據",
     "done": "完成",
-    "rMultiples": "R 倍數"
+    "rMultiples": "R 倍數",
+    "now": "現價",
+    "pnl": "盈虧"
   }
 }
