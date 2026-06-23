@@ -7,6 +7,7 @@ import { Sun, Moon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { themeAtom } from '@/store/themeAtom';
+import { writeThemeCookie } from '@/lib/themeCookie';
 import { currencyAtom } from '@/store/currencyAtom';
 import { locales } from '@/i18n/config';
 import { useAuth } from '@/hooks/useAuth';
@@ -60,7 +61,7 @@ export default function Header() {
             {currency === 'USD' ? '🇺🇸 USD' : '🇭🇰 HKD'}
           </Btn>
           <Btn onClick={switchLocale} aria-label={th('language')}>{locale === 'zh-HK' ? 'EN' : '中'}</Btn>
-          <Btn onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} aria-label={th('theme')}>
+          <Btn onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); writeThemeCookie(next); }} aria-label={th('theme')}>
             {mode === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </Btn>
           {user ? (
