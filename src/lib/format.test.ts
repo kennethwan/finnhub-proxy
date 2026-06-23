@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getSymbolCurrency, convertCurrency, formatPercent, EXCHANGE_RATE_HKD_USD } from './format';
+import { getSymbolCurrency, convertCurrency, formatCurrency, formatPercent, EXCHANGE_RATE_HKD_USD } from './format';
 
 describe('getSymbolCurrency', () => {
   it('returns HKD for .HK symbols', () => {
@@ -19,6 +19,22 @@ describe('convertCurrency', () => {
   });
   it('HKD → USD divides by rate', () => {
     expect(convertCurrency(780, 'HKD', 'USD')).toBeCloseTo(100, 6);
+  });
+});
+
+describe('formatCurrency', () => {
+  it('formats USD in en-US with no conversion', () => {
+    expect(formatCurrency(1234.56, 'USD', 'USD')).toBe('$1,234.56');
+  });
+  it('converts then formats USD→HKD in zh-HK locale', () => {
+    const out = formatCurrency(100, 'USD', 'HKD'); // 100 USD → 780 HKD
+    expect(out).toContain('780');
+    expect(out).toContain('HK$');
+  });
+  it('formats native HKD without conversion', () => {
+    const out = formatCurrency(100, 'HKD', 'HKD');
+    expect(out).toContain('100');
+    expect(out).toContain('HK$');
   });
 });
 
