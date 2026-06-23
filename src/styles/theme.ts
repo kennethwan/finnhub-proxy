@@ -36,7 +36,7 @@ export const lightTheme: AppTheme = {
     bg: '#f7f7f5', surface: '#ffffff', surfaceAlt: '#f0f0ee',
     border: 'rgba(0,0,0,0.08)',
     text: '#1a1c1e', textMuted: '#5b6066', textFaint: 'rgba(0,0,0,0.4)',
-    accent: '#d97706', accentSoft: 'rgba(217,119,6,0.12)', accentText: '#1a1c1e',
+    accent: '#b45309', accentSoft: 'rgba(180,83,9,0.12)', accentText: '#ffffff',
     positive: '#15803d', negative: '#dc2626',
   },
   breakpoints,
