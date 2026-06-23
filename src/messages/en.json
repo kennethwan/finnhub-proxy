@@ -87,6 +87,13 @@
     "exit": "Exit",
     "holdDays": "Hold Days",
     "win": "Win",
-    "loss": "Loss"
+    "loss": "Loss",
+    "empty": "No closed trades yet."
+  },
+  "positions": {
+    "autoUpdate": "Auto-updates every 60s · Finnhub",
+    "refresh": "Refresh",
+    "updating": "Updating…",
+    "empty": "No open positions. Add one using the calculator above."
   }
 }

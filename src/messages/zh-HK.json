@@ -87,6 +87,13 @@
     "exit": "平倉",
     "holdDays": "持有日數",
     "win": "勝",
-    "loss": "負"
+    "loss": "負",
+    "empty": "暫無已平倉交易。"
+  },
+  "positions": {
+    "autoUpdate": "每 60 秒自動更新 · Finnhub",
+    "refresh": "刷新",
+    "updating": "更新中…",
+    "empty": "暫無持倉。請使用上方計算器添加。"
   }
 }
