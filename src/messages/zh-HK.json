@@ -102,5 +102,18 @@
     "positions": "持倉",
     "history": "歷史",
     "footer": "報價來源 Finnhub · 每 60 秒自動更新"
+  },
+  "chart": {
+    "title": "圖表",
+    "buy": "買",
+    "stop": "止",
+    "target": "賺",
+    "supports": "支持位 · tap 設止損",
+    "resistances": "阻力位 · tap 設止賺",
+    "loading": "載入中…",
+    "loadError": "載入失敗",
+    "noData": "冇歷史數據",
+    "done": "完成",
+    "rMultiples": "R 倍數"
   }
 }

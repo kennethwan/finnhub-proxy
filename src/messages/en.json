@@ -102,5 +102,18 @@
     "positions": "Positions",
     "history": "History",
     "footer": "Quotes by Finnhub · auto-updates every 60s"
+  },
+  "chart": {
+    "title": "Chart",
+    "buy": "Buy",
+    "stop": "Stop",
+    "target": "Target",
+    "supports": "Support levels · tap to set stop",
+    "resistances": "Resistance levels · tap to set target",
+    "loading": "Loading…",
+    "loadError": "Load failed",
+    "noData": "No historical data",
+    "done": "Done",
+    "rMultiples": "R Multiples"
   }
 }
