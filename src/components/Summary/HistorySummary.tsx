@@ -57,16 +57,17 @@ export default function HistorySummary() {
       <StatTile
         label={t('avgR')}
         value={h.avgR == null ? '—' : h.avgR.toFixed(2)}
+        tone={h.avgR == null ? 'muted' : h.avgR >= 0 ? 'pos' : 'neg'}
       />
       <StatTile
         label={t('best')}
         value={h.best == null ? '—' : formatCurrency(h.best, currency, currency)}
-        tone="pos"
+        tone={h.best == null ? 'muted' : h.best >= 0 ? 'pos' : 'neg'}
       />
       <StatTile
         label={t('worst')}
         value={h.worst == null ? '—' : formatCurrency(h.worst, currency, currency)}
-        tone="neg"
+        tone={h.worst == null ? 'muted' : h.worst >= 0 ? 'pos' : 'neg'}
       />
     </Grid>
   );
