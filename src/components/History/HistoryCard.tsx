@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAtomValue } from 'jotai';
-import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { tradeMetrics } from '@/lib/finance';
 import { formatCurrency, formatPercent, getSymbolCurrency } from '@/lib/format';
@@ -21,14 +20,14 @@ interface HistoryCardProps {
 
 const fmtR = (r: number | null): string => (r == null ? '' : `${r >= 0 ? '+' : ''}${r.toFixed(2)}R`);
 
-// ── Card shell ────────────────────────────────────────────────────────────────
+// ── Styled components ─────────────────────────────────────────────────────────
 
 const Card = styled.div<{ $win: boolean }>`
   border-radius: 12px;
   border: 1px solid ${({ $win, theme }) =>
     $win ? `${theme.colors.positive}35` : `${theme.colors.negative}35`};
   background: ${({ theme }) => theme.colors.surface};
-  overflow: hidden;
+  padding: 14px;
   transition: border-color 0.2s;
 
   &:hover {
@@ -37,29 +36,14 @@ const Card = styled.div<{ $win: boolean }>`
   }
 `;
 
-const HeaderBtn = styled.button`
-  width: 100%;
+const TopRow = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 12px;
-  padding: 12px 14px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  color: inherit;
 `;
 
-const HLeft = styled.div`
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-`;
-
-const TopLine = styled.div`
+const TopLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
@@ -100,30 +84,18 @@ const DaysLabel = styled.span`
   color: ${({ theme }) => theme.colors.textFaint};
 `;
 
-const EntryLine = styled.span`
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  font-family: monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: 12.5px;
-  color: ${({ theme }) => theme.colors.text};
+const TopRight = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
 `;
 
-const SmallLbl = styled.span`
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: ${({ theme }) => theme.colors.textMuted};
-`;
-
-const HRight = styled.div`
+const PriceBlock = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
-  flex-shrink: 0;
+  gap: 3px;
 `;
 
 const ExitPrice = styled.span`
@@ -144,62 +116,64 @@ const RealizedPnL = styled.span<{ $positive: boolean }>`
     $positive ? theme.colors.positive : theme.colors.negative};
 `;
 
-const Chevron = styled.span<{ $open: boolean }>`
-  display: inline-flex;
+const DeleteBtn = styled.button`
   flex-shrink: 0;
-  color: ${({ theme }) => theme.colors.textFaint};
-  transition: transform 0.2s;
-  transform: rotate(${({ $open }) => ($open ? 180 : 0)}deg);
-`;
-
-// ── Expanded detail ─────────────────────────────────────────────────────────
-
-const Detail = styled.div`
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  padding: 12px 14px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-`;
-
-const FactsLine = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  font-family: monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const FactLbl = styled.span`
-  color: ${({ theme }) => theme.colors.textMuted};
-  margin-right: 4px;
-`;
-
-const Sep = styled.span`
-  color: ${({ theme }) => theme.colors.textFaint};
-  margin: 0 8px;
-`;
-
-const IconBtn = styled.button`
-  flex-shrink: 0;
-  padding: 7px 10px;
+  padding: 4px 6px;
   border-radius: 6px;
   font-size: 13px;
+  line-height: 1;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid transparent;
   background: transparent;
   color: ${({ theme }) => theme.colors.textFaint};
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 
   &:hover {
     color: ${({ theme }) => theme.colors.negative};
     border-color: ${({ theme }) => `${theme.colors.negative}40`};
     background: ${({ theme }) => `${theme.colors.negative}10`};
   }
+`;
+
+const StatGrid = styled.div`
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 12px;
+
+  @media (max-width: 520px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
+const Stat = styled.div`
+  min-width: 0;
+`;
+
+const StatLbl = styled.p`
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin: 0 0 3px;
+`;
+
+const StatVal = styled.p`
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.text};
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const StatSub = styled.span`
+  color: ${({ theme }) => theme.colors.textMuted};
 `;
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -214,8 +188,6 @@ export default function HistoryCard({ trade, onDelete }: HistoryCardProps) {
   // SSR-safe timestamp
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => setNow(Date.now()), []);
-
-  const [expanded, setExpanded] = useState(false);
 
   const cur = getSymbolCurrency(trade.symbol);
   const pnl = trade.pnl ?? 0;
@@ -234,47 +206,46 @@ export default function HistoryCard({ trade, onDelete }: HistoryCardProps) {
 
   return (
     <Card $win={isWin}>
-      {/* Collapsed header — symbol, result, exit price, realized P/L (with R) */}
-      <HeaderBtn type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
-        <HLeft>
-          <TopLine>
-            <Symbol>{trade.symbol}</Symbol>
-            <WinLossChip $win={isWin}>{isWin ? th('win') : th('loss')}</WinLossChip>
-            <DaysLabel>{m.days} {t('days')}</DaysLabel>
-          </TopLine>
-          <EntryLine>
-            <SmallLbl>{t('entry')}</SmallLbl>
-            {formatCurrency(trade.entryPrice, cur, currency)}
-          </EntryLine>
-        </HLeft>
+      <TopRow>
+        <TopLeft>
+          <Symbol>{trade.symbol}</Symbol>
+          <WinLossChip $win={isWin}>{isWin ? th('win') : th('loss')}</WinLossChip>
+          <DaysLabel>{m.days} {t('days')}</DaysLabel>
+        </TopLeft>
 
-        <HRight>
-          <ExitPrice>{formatCurrency(trade.exitPrice ?? 0, cur, currency)}</ExitPrice>
-          <RealizedPnL $positive={isWin}>
-            {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, cur, currency)}
-            {m.changePct != null && ` · ${formatPercent(m.changePct)}`}
-            {m.r != null && ` · ${fmtR(m.r)}`}
-          </RealizedPnL>
-        </HRight>
+        <TopRight>
+          <PriceBlock>
+            <ExitPrice>{formatCurrency(trade.exitPrice ?? 0, cur, currency)}</ExitPrice>
+            <RealizedPnL $positive={isWin}>
+              {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, cur, currency)}
+              {m.changePct != null && ` · ${formatPercent(m.changePct)}`}
+              {m.r != null && ` · ${fmtR(m.r)}`}
+            </RealizedPnL>
+          </PriceBlock>
+          <DeleteBtn onClick={() => onDelete(trade.id)} title={t('delete')} aria-label={t('delete')}>🗑️</DeleteBtn>
+        </TopRight>
+      </TopRow>
 
-        <Chevron $open={expanded}><ChevronDown size={18} /></Chevron>
-      </HeaderBtn>
-
-      {/* Expanded detail */}
-      {expanded && (
-        <Detail>
-          <FactsLine>
-            <span><FactLbl>{th('exit')}</FactLbl>{formatCurrency(trade.exitPrice ?? 0, cur, currency)}</span>
-            <Sep>·</Sep>
-            <span>{trade.shares} {t('shares')}</span>
-            <Sep>·</Sep>
-            <span><FactLbl>{t('allocated')}</FactLbl>{formatCurrency(amtAllocated, cur, currency)} ({pctAllocated.toFixed(1)}%)</span>
-            <Sep>·</Sep>
-            <span><FactLbl>{t('currentStop')}</FactLbl>{formatCurrency(trade.initialStopLoss, cur, currency)}</span>
-          </FactsLine>
-          <IconBtn onClick={() => onDelete(trade.id)} title={t('delete')}>🗑️</IconBtn>
-        </Detail>
-      )}
+      <StatGrid>
+        <Stat>
+          <StatLbl>{t('entry')}</StatLbl>
+          <StatVal>{formatCurrency(trade.entryPrice, cur, currency)}</StatVal>
+        </Stat>
+        <Stat>
+          <StatLbl>{th('exit')}</StatLbl>
+          <StatVal>{formatCurrency(trade.exitPrice ?? 0, cur, currency)}</StatVal>
+        </Stat>
+        <Stat>
+          <StatLbl>{t('shares')}</StatLbl>
+          <StatVal>{trade.shares}</StatVal>
+        </Stat>
+        <Stat>
+          <StatLbl>{t('allocated')}</StatLbl>
+          <StatVal>
+            {formatCurrency(amtAllocated, cur, currency)}<StatSub> · {pctAllocated.toFixed(1)}%</StatSub>
+          </StatVal>
+        </Stat>
+      </StatGrid>
     </Card>
   );
 }
