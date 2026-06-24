@@ -60,7 +60,15 @@ export default function CandleChart({ candles, lines = [], onPriceClick, height 
     const created: IPriceLine[] = lines.map((l) =>
       series.createPriceLine({ price: l.price, color: l.color, lineWidth: 1, lineStyle: l.lineStyle ?? 0, axisLabelVisible: true, title: l.title }),
     );
-    return () => { created.forEach((pl) => series.removePriceLine(pl)); };
+    return () => {
+      // On unmount React may run the create-chart cleanup (chart.remove(), which
+      // nulls chartRef) before this one. Calling removePriceLine on a removed
+      // chart re-invalidates the destroyed model and schedules a paint that fires
+      // after the canvas binding is disposed → lightweight-charts "Object is
+      // disposed". Skip when the chart is already gone.
+      if (!chartRef.current) return;
+      created.forEach((pl) => series.removePriceLine(pl));
+    };
   }, [lines]);
 
   return <div ref={containerRef} style={{ width: '100%', height }} />;
