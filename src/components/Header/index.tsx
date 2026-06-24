@@ -11,6 +11,7 @@ import { writeThemeCookie } from '@/lib/themeCookie';
 import { currencyAtom } from '@/store/currencyAtom';
 import { locales } from '@/i18n/config';
 import { useAuth } from '@/hooks/useAuth';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import AuthModal from '@/components/AuthModal';
 import SettingsModal from '@/components/Settings';
 
@@ -139,7 +140,7 @@ export default function Header() {
           <Btn onClick={() => setSettingsOpen(true)} aria-label={th('settings')}>
             <SettingsIcon size={14} />
           </Btn>
-          {user ? (
+          {!isSupabaseConfigured ? null : user ? (
             <>
               <EmailText title={user.email ?? ''}>{user.email ?? ''}</EmailText>
               <Btn onClick={signOut}>{ta('logout')}</Btn>

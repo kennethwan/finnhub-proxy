@@ -1,5 +1,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
+// True only when the client-exposed Supabase env vars are present (inlined at build).
+// When false the app runs anonymously (local trades, no login) instead of crashing.
+export const isSupabaseConfigured =
+  !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
 // Lazy singleton — created on first use so SSG/build does not throw
 // when env vars are absent (components that call useAuth/useTrades are 'use client').
 let _client: SupabaseClient | null = null;
