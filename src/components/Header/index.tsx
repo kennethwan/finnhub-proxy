@@ -16,18 +16,55 @@ import AuthModal from '@/components/AuthModal';
 
 const Bar = styled.header`
   position: sticky; top: 0; z-index: 40;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  height: 56px; padding: 0 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 56px; padding: 8px 12px;
+  box-sizing: border-box;
   background: ${({ theme }) => theme.colors.bg};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+
+  @media (max-width: 390px) {
+    gap: 6px;
+    padding: 6px 8px;
+  }
 `;
-const Brand = styled.span` font-weight: 600; color: ${({ theme }) => theme.colors.text}; `;
+const Brand = styled.span`
+  display: inline-flex; align-items: center; gap: 4px;
+  min-width: 0;
+  font-weight: 600; color: ${({ theme }) => theme.colors.text};
+  white-space: nowrap;
+`;
+const BrandTitle = styled.span`
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (max-width: 640px) {
+    display: none;
+  }
+`;
+const Controls = styled.div`
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+
+  @media (max-width: 390px) {
+    gap: 4px;
+  }
+`;
 const Btn = styled.button`
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 10px; font-size: 12px; cursor: pointer;
   color: ${({ theme }) => theme.colors.text};
   background: transparent;
   border: 1px solid ${({ theme }) => theme.colors.border}; border-radius: 6px;
+  white-space: nowrap;
+
+  @media (max-width: 390px) {
+    gap: 4px;
+    padding: 5px 7px;
+    font-size: 11px;
+  }
 `;
 const NavLink = styled(Link)<{ $active: boolean }>`
   display: inline-flex;
@@ -39,12 +76,37 @@ const NavLink = styled(Link)<{ $active: boolean }>`
   border: 1px solid ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
   border-radius: 6px;
   text-decoration: none;
+  white-space: nowrap;
+
+  @media (max-width: 390px) {
+    padding: 5px 7px;
+    font-size: 11px;
+  }
 `;
 
 const EmailText = styled.span`
   max-width: 120px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 12px; color: ${({ theme }) => theme.colors.text};
+
+  @media (max-width: 390px) {
+    max-width: 88px;
+    font-size: 11px;
+  }
+`;
+
+const AuthCtaText = styled.span`
+  @media (max-width: 390px) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 `;
 
 export default function Header() {
@@ -70,10 +132,13 @@ export default function Header() {
   return (
     <>
       <Bar>
-        <Brand>▲ {t('title')}</Brand>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <NavLink href={dashboardHref} $active={!isSizer}>{th('dashboard')}</NavLink>
-          <NavLink href={sizerHref} $active={isSizer}>{th('sizer')}</NavLink>
+        <Brand aria-label={t('title')}>
+          <span aria-hidden="true">▲</span>
+          <BrandTitle>{t('title')}</BrandTitle>
+        </Brand>
+        <Controls>
+          <NavLink href={dashboardHref} $active={!isSizer} aria-current={!isSizer ? 'page' : undefined}>{th('dashboard')}</NavLink>
+          <NavLink href={sizerHref} $active={isSizer} aria-current={isSizer ? 'page' : undefined}>{th('sizer')}</NavLink>
           <Btn onClick={() => setCurrency(currency === 'USD' ? 'HKD' : 'USD')} aria-label={`${currency} currency`}>
             {currency === 'USD' ? '🇺🇸 USD' : '🇭🇰 HKD'}
           </Btn>
@@ -87,9 +152,12 @@ export default function Header() {
               <Btn onClick={signOut}>{ta('logout')}</Btn>
             </>
           ) : (
-            <Btn onClick={() => setAuthOpen(true)}>{ta('cta')}</Btn>
+            <Btn onClick={() => setAuthOpen(true)} aria-label={ta('cta')}>
+              <span aria-hidden="true">🔐</span>
+              <AuthCtaText>{ta('cta').replace(/^🔐\s*/, '')}</AuthCtaText>
+            </Btn>
           )}
-        </div>
+        </Controls>
       </Bar>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </>
