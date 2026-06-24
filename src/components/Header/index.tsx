@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useAtom } from 'jotai';
 import { Sun, Moon, Settings as SettingsIcon } from 'lucide-react';
@@ -104,6 +104,18 @@ export default function Header() {
   const [authOpen, setAuthOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Publish the (sticky) header's height so the account bar can stick right below it.
+  const barRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const apply = () => document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const switchLocale = () => {
     const next = locales.find((l) => l !== locale) ?? locale;
     router.push(pathname.replace(new RegExp(`^/${locale}(?=/|$)`), `/${next}`));
@@ -111,7 +123,7 @@ export default function Header() {
 
   return (
     <>
-      <Bar>
+      <Bar ref={barRef}>
         <Brand aria-label={t('title')}>
           <span aria-hidden="true">▲</span>
           <BrandTitle>{t('title')}</BrandTitle>

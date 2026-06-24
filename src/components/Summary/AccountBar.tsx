@@ -11,10 +11,17 @@ import { currencyAtom } from '@/store/currencyAtom';
 import { fullPositionPctAtom } from '@/store/fullPositionAtom';
 import { capitalAtom } from '@/store/capitalAtom';
 
-const Wrap = styled.div`
+const Sticky = styled.div`
+  position: sticky;
+  top: var(--header-h, 56px);
+  z-index: 30;
+  background: ${({ theme }) => theme.colors.bg};
+`;
+
+const Inner = styled.div`
   max-width: 720px;
   margin: 0 auto;
-  padding: 16px 16px 0;
+  padding: 16px 16px 8px;
 `;
 
 const Bar = styled.div`
@@ -60,6 +67,13 @@ const PL = styled.span<{ $positive: boolean }>`
   color: ${({ $positive, theme }) => ($positive ? theme.colors.positive : theme.colors.negative)};
 `;
 
+const Break = styled.span`
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
 export default function AccountBar() {
   const t = useTranslations('summary');
   const trades = useAtomValue(tradesAtom);
@@ -77,21 +91,27 @@ export default function AccountBar() {
 
   const pct = s.capital !== 0 ? (s.totalPL / s.capital) * 100 : 0;
   const positive = s.totalPL >= 0;
+  const signed = (v: number) => `${v >= 0 ? '+' : ''}${formatCurrency(v, currency, currency)}`;
 
   return (
-    <Wrap>
-      <Bar>
-        <Block>
-          <Lbl>{t('currentNav')}</Lbl>
-          <Nav>{formatCurrency(s.nav, currency, currency)}</Nav>
-        </Block>
-        <Block $right>
-          <Lbl>{t('totalPL')}</Lbl>
-          <PL $positive={positive}>
-            {positive ? '+' : ''}{formatCurrency(s.totalPL, currency, currency)} · {positive ? '+' : ''}{pct.toFixed(2)}%
-          </PL>
-        </Block>
-      </Bar>
-    </Wrap>
+    <Sticky>
+      <Inner>
+        <Bar>
+          <Block>
+            <Lbl>{t('currentNav')}</Lbl>
+            <Nav>{formatCurrency(s.nav, currency, currency)}</Nav>
+          </Block>
+          <Block $right>
+            <Lbl>{t('totalPL')}</Lbl>
+            <PL $positive={positive}>
+              {positive ? '+' : ''}{formatCurrency(s.totalPL, currency, currency)} · {positive ? '+' : ''}{pct.toFixed(2)}%
+            </PL>
+            <Break>
+              {t('unrealized')} {s.hasLiveUnrealized ? signed(s.unrealized) : '—'} · {t('realized')} {signed(s.realized)}
+            </Break>
+          </Block>
+        </Bar>
+      </Inner>
+    </Sticky>
   );
 }
