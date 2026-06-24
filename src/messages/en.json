@@ -85,6 +85,8 @@
     "ofCapital": "of capital",
     "ptnSizing": "Ptn Sizing",
     "currentStop": "Stop Loss",
+    "initialStop": "Initial Stop",
+    "marketValue": "Market Value",
     "risk": "Risk",
     "guaranteedProfit": "Guaranteed Profit",
     "toRiskFree": "→ Risk Free",

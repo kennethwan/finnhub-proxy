@@ -7,7 +7,6 @@ import { useAtomValue } from 'jotai';
 import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { tradeMetrics } from '@/lib/finance';
-import InfoTip from '@/components/ui/InfoTip';
 import { formatCurrency, formatPercent, getSymbolCurrency } from '@/lib/format';
 import { pricesAtom } from '@/store/pricesAtom';
 import { currencyAtom } from '@/store/currencyAtom';
@@ -164,8 +163,8 @@ const StatGrid = styled.div`
   padding-top: 12px;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 
   @media (max-width: 520px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -207,51 +206,10 @@ const Detail = styled.div`
   padding: 12px 14px;
 `;
 
-const RiskGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.border};
-`;
-
-const RiskCell = styled.div`
-  padding: 8px 10px;
-  background: ${({ theme }) => theme.colors.surfaceAlt};
-`;
-
-const RiskCellHead = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0 0 2px;
-`;
-
-const RiskCellLabel = styled.p`
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: ${({ theme }) => theme.colors.textMuted};
-  margin: 0;
-`;
-
-const RiskCellValue = styled.p`
-  font-family: monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  color: ${({ theme }) => theme.colors.text};
-  margin: 0;
-  line-height: 1.45;
-`;
-
 const Progress = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
   font-family: monospace;
   font-size: 10px;
   text-transform: uppercase;
@@ -376,7 +334,6 @@ const CancelBtn = styled.button`
 
 export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: TradeCardProps) {
   const t = useTranslations('card');
-  const ti = useTranslations('metricsInfo');
   const prices = useAtomValue(pricesAtom);
   const currency = useAtomValue(currencyAtom);
   const fullPositionPct = useAtomValue(fullPositionPctAtom);
@@ -429,14 +386,11 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
     setInput('');
   };
 
-  const formatRiskTriple = (x: { r: number; usd: number; pctC: number } | null, cur2: Parameters<typeof formatCurrency>[1]): string => {
-    if (x == null) return '—';
-    return `${x.r.toFixed(2)}R · ${formatCurrency(x.usd, cur2, currency)} · ${x.pctC.toFixed(2)}%`;
-  };
-
   const unrealizedPnL = m.marketPrice != null
     ? (m.marketPrice - trade.entryPrice) * trade.shares
     : null;
+
+  const marketValue = m.marketPrice != null ? m.marketPrice * trade.shares : null;
 
   return (
     <Card $isRiskFree={m.isRiskFree}>
@@ -475,6 +429,10 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
             <StatVal>{formatCurrency(trade.entryPrice, cur, currency)}</StatVal>
           </Stat>
           <Stat>
+            <StatLbl>{t('initialStop')}</StatLbl>
+            <StatVal>{formatCurrency(trade.initialStopLoss, cur, currency)}</StatVal>
+          </Stat>
+          <Stat>
             <StatLbl>{t('currentStop')}</StatLbl>
             <StatVal>{formatCurrency(trade.currentStopLoss, cur, currency)}</StatVal>
           </Stat>
@@ -488,36 +446,16 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
               {formatCurrency(m.amtAllocated, cur, currency)}<StatSub> · {m.pctAllocated.toFixed(1)}%</StatSub>
             </StatVal>
           </Stat>
+          <Stat>
+            <StatLbl>{t('marketValue')}</StatLbl>
+            <StatVal>{marketValue != null ? formatCurrency(marketValue, cur, currency) : '—'}</StatVal>
+          </Stat>
         </StatGrid>
       </HeaderBtn>
 
-      {/* Expanded detail */}
+      {/* Expanded detail — progress + actions (portfolio SDD/MDD lives in the summary) */}
       {expanded && (
         <Detail>
-          <RiskGrid>
-            <RiskCell>
-              <RiskCellHead>
-                <RiskCellLabel>SDD</RiskCellLabel>
-                <InfoTip label="SDD">{ti('sdd')}</InfoTip>
-              </RiskCellHead>
-              <RiskCellValue>{formatRiskTriple(m.sdd, cur)}</RiskCellValue>
-            </RiskCell>
-            <RiskCell>
-              <RiskCellHead>
-                <RiskCellLabel>WDD</RiskCellLabel>
-                <InfoTip label="WDD">{ti('wdd')}</InfoTip>
-              </RiskCellHead>
-              <RiskCellValue>{formatRiskTriple(m.wdd, cur)}</RiskCellValue>
-            </RiskCell>
-            <RiskCell>
-              <RiskCellHead>
-                <RiskCellLabel>MDD</RiskCellLabel>
-                <InfoTip label="MDD">{ti('mdd')}</InfoTip>
-              </RiskCellHead>
-              <RiskCellValue>{formatRiskTriple(m.mdd, cur)}</RiskCellValue>
-            </RiskCell>
-          </RiskGrid>
-
           {!m.isRiskFree && (
             <Progress>
               <span>→ {t('toRiskFree')}</span>

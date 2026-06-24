@@ -85,6 +85,8 @@
     "ofCapital": "本金佔比",
     "ptnSizing": "倉位大小",
     "currentStop": "現時止損",
+    "initialStop": "初始止損",
+    "marketValue": "現時價值",
     "risk": "風險",
     "guaranteedProfit": "保證利潤",
     "toRiskFree": "→ 無風險",
