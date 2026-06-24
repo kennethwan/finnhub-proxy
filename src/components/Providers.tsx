@@ -9,10 +9,11 @@ import StyledComponentsRegistry from '@/styles/registry';
 import { GlobalStyle } from '@/styles/globals';
 import { darkTheme, lightTheme } from '@/styles/theme';
 import { themeAtom, type ThemeMode } from '@/store/themeAtom';
+import { activeTabAtom, type ActiveTab } from '@/store/uiAtom';
 import { timeZone } from '@/i18n/config';
 
-function ThemedShell({ children, initialTheme }: { children: React.ReactNode; initialTheme: ThemeMode }) {
-  useHydrateAtoms([[themeAtom, initialTheme]] as const);
+function ThemedShell({ children, initialTheme, initialTab }: { children: React.ReactNode; initialTheme: ThemeMode; initialTab: ActiveTab }) {
+  useHydrateAtoms([[themeAtom, initialTheme], [activeTabAtom, initialTab]] as const);
   const mode = useAtomValue(themeAtom);
   return (
     <ThemeProvider theme={mode === 'light' ? lightTheme : darkTheme}>
@@ -23,13 +24,13 @@ function ThemedShell({ children, initialTheme }: { children: React.ReactNode; in
 }
 
 export default function Providers({
-  children, locale, messages, initialTheme,
-}: { children: React.ReactNode; locale: string; messages: Record<string, unknown>; initialTheme: ThemeMode }) {
+  children, locale, messages, initialTheme, initialTab,
+}: { children: React.ReactNode; locale: string; messages: Record<string, unknown>; initialTheme: ThemeMode; initialTab: ActiveTab }) {
   return (
     <NextIntlClientProvider locale={locale} messages={messages} timeZone={timeZone}>
       <JotaiProvider>
         <StyledComponentsRegistry>
-          <ThemedShell initialTheme={initialTheme}>{children}</ThemedShell>
+          <ThemedShell initialTheme={initialTheme} initialTab={initialTab}>{children}</ThemedShell>
         </StyledComponentsRegistry>
       </JotaiProvider>
     </NextIntlClientProvider>

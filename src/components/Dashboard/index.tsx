@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { activeTabAtom } from '@/store/uiAtom';
 import type { ActiveTab } from '@/store/uiAtom';
 import { usePricePolling } from '@/hooks/usePricePolling';
+import { writeTabCookie } from '@/lib/tabCookie';
 import AccountBar from '@/components/Summary/AccountBar';
 import SizerWorkspace from '@/components/Sizer/SizerWorkspace';
 import Positions from '@/components/Positions';
@@ -76,7 +77,7 @@ export default function Dashboard() {
             role="tab"
             aria-selected={activeTab === tab.key}
             $active={activeTab === tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => { setActiveTab(tab.key); writeTabCookie(tab.key); }}
           >
             {tab.label}
           </Tab>
