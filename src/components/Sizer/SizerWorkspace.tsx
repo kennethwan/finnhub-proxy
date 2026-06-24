@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslations } from 'next-intl';
 import PositionSizerPanel from '@/components/Sizer/PositionSizerPanel';
@@ -16,20 +16,15 @@ const Container = styled.div`
 const Grid = styled.div`
   display: grid;
   grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
-  grid-template-areas: 'panel chart';
   gap: 16px;
   align-items: start;
 
   @media (max-width: 1023px) {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      'chart'
-      'panel';
   }
 `;
 
 const PanelRail = styled.div`
-  grid-area: panel;
   position: sticky;
   top: 72px;
 
@@ -39,7 +34,6 @@ const PanelRail = styled.div`
 `;
 
 const ChartRail = styled.section`
-  grid-area: chart;
   min-width: 0;
 `;
 
@@ -56,21 +50,47 @@ export default function SizerWorkspace() {
   const t = useTranslations('sizerPage');
   const chartHeaderId = useId();
   const [symbol, setSymbol] = useState('');
+  const [isDesktop, setIsDesktop] = useState(false);
   const displaySymbol = normalizeTradingViewSymbol(symbol);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  const chart = (
+    <ChartRail aria-labelledby={chartHeaderId}>
+      <ChartHeader id={chartHeaderId}>
+        <span>{t('chartLabel')}</span>
+        <span>{displaySymbol}</span>
+      </ChartHeader>
+      <TradingViewWidget symbol={symbol} />
+    </ChartRail>
+  );
+
+  const panel = (
+    <PanelRail>
+      <PositionSizerPanel chartMode="none" onSymbolChange={setSymbol} />
+    </PanelRail>
+  );
 
   return (
     <Container>
       <Grid>
-        <ChartRail aria-labelledby={chartHeaderId}>
-          <ChartHeader id={chartHeaderId}>
-            <span>{t('chartLabel')}</span>
-            <span>{displaySymbol}</span>
-          </ChartHeader>
-          <TradingViewWidget symbol={symbol} />
-        </ChartRail>
-        <PanelRail>
-          <PositionSizerPanel chartMode="none" onSymbolChange={setSymbol} />
-        </PanelRail>
+        {isDesktop ? (
+          <>
+            {panel}
+            {chart}
+          </>
+        ) : (
+          <>
+            {chart}
+            {panel}
+          </>
+        )}
       </Grid>
     </Container>
   );
