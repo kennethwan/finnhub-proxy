@@ -9,9 +9,7 @@
   },
   "header": {
     "theme": "主題",
-    "language": "語言",
-    "dashboard": "總覽",
-    "sizer": "Sizer"
+    "language": "語言"
   },
   "auth": {
     "login": "登入",

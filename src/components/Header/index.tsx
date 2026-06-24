@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import styled from 'styled-components';
 import { useAtom } from 'jotai';
 import { Sun, Moon } from 'lucide-react';
@@ -66,24 +65,6 @@ const Btn = styled.button`
     font-size: 11px;
   }
 `;
-const NavLink = styled(Link)<{ $active: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  font-size: 12px;
-  color: ${({ $active, theme }) => $active ? theme.colors.accentText : theme.colors.text};
-  background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
-  border: 1px solid ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
-  border-radius: 6px;
-  text-decoration: none;
-  white-space: nowrap;
-
-  @media (max-width: 390px) {
-    padding: 5px 7px;
-    font-size: 11px;
-  }
-`;
-
 const EmailText = styled.span`
   max-width: 120px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -120,9 +101,6 @@ export default function Header() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
-  const dashboardHref = `/${locale}`;
-  const sizerHref = `/${locale}/sizer`;
-  const isSizer = pathname.endsWith('/sizer');
 
   const switchLocale = () => {
     const next = locales.find((l) => l !== locale) ?? locale;
@@ -137,8 +115,6 @@ export default function Header() {
           <BrandTitle>{t('title')}</BrandTitle>
         </Brand>
         <Controls>
-          <NavLink href={dashboardHref} $active={!isSizer} aria-current={!isSizer ? 'page' : undefined}>{th('dashboard')}</NavLink>
-          <NavLink href={sizerHref} $active={isSizer} aria-current={isSizer ? 'page' : undefined}>{th('sizer')}</NavLink>
           <Btn onClick={() => setCurrency(currency === 'USD' ? 'HKD' : 'USD')} aria-label={`${currency} currency`}>
             {currency === 'USD' ? '🇺🇸 USD' : '🇭🇰 HKD'}
           </Btn>
