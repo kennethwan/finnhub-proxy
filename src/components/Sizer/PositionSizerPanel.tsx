@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import styled from 'styled-components';
+import type { ChartContext } from '@/components/Chart/KeyLevelChart';
 import { useAtom, useAtomValue } from 'jotai';
 import { useTranslations } from 'next-intl';
 import { calculatePosition } from '@/lib/finance';
@@ -243,11 +244,14 @@ const ChartBtn = styled.button`
 interface PositionSizerPanelProps {
   chartMode?: 'dialog' | 'none';
   onSymbolChange?: (symbol: string) => void;
+  /** Reports symbol/buy/stop/target + pick handlers so a parent can render an inline chart. */
+  onChartContext?: (ctx: ChartContext) => void;
 }
 
 export default function PositionSizerPanel({
   chartMode = 'dialog',
   onSymbolChange,
+  onChartContext,
 }: PositionSizerPanelProps) {
   const t = useTranslations('calculator');
   const currency = useAtomValue(currencyAtom);
@@ -275,6 +279,26 @@ export default function PositionSizerPanel({
     : parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100);
 
   const stopForChart = isNaN(stop) ? null : stop;
+
+  const onPickStop = useCallback((p: number) => {
+    setStopLossType('price');
+    setStopLoss(p.toFixed(2));
+  }, []);
+  const onPickTarget = useCallback((p: number) => {
+    setTargetPrice(p.toFixed(2));
+  }, []);
+
+  // Report the chart context up so a parent (e.g. SizerWorkspace) can render an inline chart.
+  useEffect(() => {
+    onChartContext?.({
+      symbol,
+      buyPrice: parseFloat(buyPrice) || null,
+      stop: stopForChart,
+      target: parseFloat(targetPrice) || null,
+      onPickStop,
+      onPickTarget,
+    });
+  }, [symbol, buyPrice, stopForChart, targetPrice, onChartContext, onPickStop, onPickTarget]);
 
   const result = useMemo(
     () => calculatePosition({
@@ -461,8 +485,8 @@ export default function PositionSizerPanel({
           buyPrice={parseFloat(buyPrice) || null}
           stop={stopForChart}
           target={parseFloat(targetPrice) || null}
-          onPickStop={(p) => { setStopLossType('price'); setStopLoss(p.toFixed(2)); }}
-          onPickTarget={(p) => setTargetPrice(p.toFixed(2))}
+          onPickStop={onPickStop}
+          onPickTarget={onPickTarget}
           onClose={() => setChartOpen(false)}
         />
       )}

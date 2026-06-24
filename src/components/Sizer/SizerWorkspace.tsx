@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslations } from 'next-intl';
 import PositionSizerPanel from '@/components/Sizer/PositionSizerPanel';
-import TradingViewWidget from '@/components/Sizer/TradingViewWidget';
+import KeyLevelChart, { type ChartContext } from '@/components/Chart/KeyLevelChart';
 import { normalizeTradingViewSymbol } from '@/lib/tradingViewSymbol';
 
 const Container = styled.div`
@@ -41,17 +41,34 @@ const ChartHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 8px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
+`;
+
+const TvLink = styled.a`
+  color: ${({ theme }) => theme.colors.accent};
+  text-decoration: none;
+  white-space: nowrap;
+  &:hover { text-decoration: underline; }
+`;
+
+const ChartFrame = styled.div`
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: 8px;
+  padding: 12px;
 `;
 
 export default function SizerWorkspace() {
   const t = useTranslations('sizerPage');
   const chartHeaderId = useId();
   const [symbol, setSymbol] = useState('');
+  const [chartCtx, setChartCtx] = useState<ChartContext | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
-  const displaySymbol = normalizeTradingViewSymbol(symbol);
+  const tvSymbol = normalizeTradingViewSymbol(symbol);
+  const tvUrl = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSymbol)}`;
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1024px)');
@@ -64,16 +81,18 @@ export default function SizerWorkspace() {
   const chart = (
     <ChartRail aria-labelledby={chartHeaderId}>
       <ChartHeader id={chartHeaderId}>
-        <span>{t('chartLabel')}</span>
-        <span>{displaySymbol}</span>
+        <span>{t('chartLabel')} · {tvSymbol}</span>
+        <TvLink href={tvUrl} target="_blank" rel="noopener noreferrer">{t('openTradingView')}</TvLink>
       </ChartHeader>
-      <TradingViewWidget symbol={symbol} />
+      <ChartFrame>
+        {chartCtx && <KeyLevelChart {...chartCtx} height={isDesktop ? 460 : 320} />}
+      </ChartFrame>
     </ChartRail>
   );
 
   const panel = (
     <PanelRail>
-      <PositionSizerPanel chartMode="none" onSymbolChange={setSymbol} />
+      <PositionSizerPanel chartMode="none" onSymbolChange={setSymbol} onChartContext={setChartCtx} />
     </PanelRail>
   );
 

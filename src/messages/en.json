@@ -5,7 +5,8 @@
   },
   "sizerPage": {
     "title": "Sizer Workspace",
-    "chartLabel": "TradingView Chart"
+    "chartLabel": "Chart",
+    "openTradingView": "Open in TradingView ↗"
   },
   "header": {
     "theme": "Theme",
@@ -119,6 +120,7 @@
     "loading": "Loading…",
     "loadError": "Load failed",
     "noData": "No historical data",
+    "enterSymbol": "Enter a symbol to load the chart",
     "done": "Done",
     "rMultiples": "R Multiples",
     "now": "Now",

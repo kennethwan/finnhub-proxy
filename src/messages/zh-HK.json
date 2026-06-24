@@ -5,7 +5,8 @@
   },
   "sizerPage": {
     "title": "Sizer Workspace",
-    "chartLabel": "TradingView 圖表"
+    "chartLabel": "圖表",
+    "openTradingView": "喺 TradingView 開 ↗"
   },
   "header": {
     "theme": "主題",
@@ -119,6 +120,7 @@
     "loading": "載入中…",
     "loadError": "載入失敗",
     "noData": "冇歷史數據",
+    "enterSymbol": "輸入股票代號睇圖",
     "done": "完成",
     "rMultiples": "R 倍數",
     "now": "現價",
