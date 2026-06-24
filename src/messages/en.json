@@ -9,7 +9,9 @@
   },
   "header": {
     "theme": "Theme",
-    "language": "Language"
+    "language": "Language",
+    "dashboard": "Dashboard",
+    "sizer": "Sizer"
   },
   "auth": {
     "login": "Log In",
