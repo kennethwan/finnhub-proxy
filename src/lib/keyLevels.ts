@@ -19,15 +19,14 @@ export function detectKeyLevels(candles: Candle[], opts: KeyLevelOpts = {}): Key
   const maxLevels = opts.maxLevels ?? 5;
   if (candles.length < lookback * 2 + 1) return { supports: [], resistances: [] };
 
-  const lows: KeyLevel[] = [];
-  const highs: KeyLevel[] = [];
+  const pivots: KeyLevel[] = [];
 
   for (let i = lookback; i < candles.length - lookback; i++) {
     const wStart = Math.max(0, i - lookback * 2);
     const wEnd = Math.min(candles.length - 1, i + lookback * 2);
     const window = candles.slice(wStart, wEnd + 1);
 
-    // swing low → support
+    // swing low pivot
     const centerLow = candles[i].l;
     let leftMin = Infinity, rightMin = Infinity;
     for (let k = i - lookback; k < i; k++) leftMin = Math.min(leftMin, candles[k].l);
@@ -35,10 +34,10 @@ export function detectKeyLevels(candles: Candle[], opts: KeyLevelOpts = {}): Key
     if (centerLow < leftMin && centerLow < rightMin) {
       const nearHigh = Math.max(...window.map((c) => c.h));
       const prominence = nearHigh > 0 ? (nearHigh - centerLow) / nearHigh : 0;
-      if (prominence >= minProminence) lows.push({ price: centerLow, time: candles[i].t, strength: prominence });
+      if (prominence >= minProminence) pivots.push({ price: centerLow, time: candles[i].t, strength: prominence });
     }
 
-    // swing high → resistance (symmetric)
+    // swing high pivot (symmetric)
     const centerHigh = candles[i].h;
     let leftMax = -Infinity, rightMax = -Infinity;
     for (let k = i - lookback; k < i; k++) leftMax = Math.max(leftMax, candles[k].h);
@@ -46,11 +45,19 @@ export function detectKeyLevels(candles: Candle[], opts: KeyLevelOpts = {}): Key
     if (centerHigh > leftMax && centerHigh > rightMax) {
       const nearLow = Math.min(...window.map((c) => c.l));
       const prominence = centerHigh > 0 ? (centerHigh - nearLow) / centerHigh : 0;
-      if (prominence >= minProminence) highs.push({ price: centerHigh, time: candles[i].t, strength: prominence });
+      if (prominence >= minProminence) pivots.push({ price: centerHigh, time: candles[i].t, strength: prominence });
     }
   }
 
-  return { supports: dedupeTop(lows, maxLevels), resistances: dedupeTop(highs, maxLevels) };
+  // Classify by where price is NOW (latest close): pivots below current price are
+  // supports (valid long stops), pivots above are resistances (valid targets). A
+  // past swing low that now sits above price has flipped role to resistance — and
+  // vice-versa — so we split by price, not by pivot type.
+  const currentPrice = candles[candles.length - 1].c;
+  const supports = pivots.filter((p) => p.price < currentPrice);
+  const resistances = pivots.filter((p) => p.price > currentPrice);
+
+  return { supports: dedupeTop(supports, maxLevels), resistances: dedupeTop(resistances, maxLevels) };
 }
 
 export function suggestStop(support: number): number { return support * 0.995; }

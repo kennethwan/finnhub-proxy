@@ -81,20 +81,21 @@ export default function KeyLevelChart({
 
   const rl = buyPrice != null && stop != null ? rLevels(buyPrice, stop) : null;
 
+  // Only the user's own trade levels are drawn — buy/stop/target and the R
+  // projections. Detected support/resistance levels are NOT pre-drawn; tap a pill
+  // below to set a stop/target, which then draws that line.
   const lines = useMemo((): PriceLine[] => {
     const result: PriceLine[] = [];
     if (buyPrice != null) result.push({ price: buyPrice, color: '#34d399', title: t('buy'), lineStyle: 1 });
     if (stop != null) result.push({ price: stop, color: '#f87171', title: t('stop'), lineStyle: 0 });
     if (target != null) result.push({ price: target, color: '#fbbf24', title: t('target'), lineStyle: 0 });
-    for (const s of supports) result.push({ price: s.price, color: '#34d399', title: 'S', lineStyle: 2 });
-    for (const r of resistances) result.push({ price: r.price, color: '#f87171', title: 'R', lineStyle: 2 });
     if (rl) {
       result.push({ price: rl.r1, color: '#fbbf24', title: '1R', lineStyle: 1 });
       result.push({ price: rl.r2, color: '#fbbf24', title: '2R', lineStyle: 1 });
       result.push({ price: rl.r3, color: '#fbbf24', title: '3R', lineStyle: 1 });
     }
     return result;
-  }, [buyPrice, stop, target, supports, resistances, rl, t]);
+  }, [buyPrice, stop, target, rl, t]);
 
   let body: React.ReactNode;
   if (!trimmed) body = <StateText $height={height}>{t('enterSymbol')}</StateText>;

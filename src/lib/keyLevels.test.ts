@@ -35,6 +35,31 @@ describe('detectKeyLevels', () => {
     const { supports } = detectKeyLevels(series(), { maxLevels: 1 });
     expect(supports.length).toBeLessThanOrEqual(1);
   });
+
+  // A swing low that now sits ABOVE the latest price has flipped role: it is no
+  // longer a support (a valid long stop) but overhead resistance. Levels are
+  // classified by where price is now, not by pivot type.
+  it('classifies levels by the latest price, not by pivot type', () => {
+    // plateau ~200 with a clear swing low at 184, then a crash that settles ~98
+    const closes: number[] = [];
+    for (let i = 0; i < 6; i++) closes.push(200);
+    closes.push(185); // index 6: swing low (low = 184)
+    for (let i = 0; i < 6; i++) closes.push(200 + i); // recover/rise to 205
+    for (const v of [190, 175, 160, 145, 130, 115, 100, 98, 99, 98, 99, 98, 99, 98]) closes.push(v);
+    const candles: Candle[] = closes.map((c, idx) => ({
+      t: 1_700_000_000 + idx * 86400, o: c, h: c + 1, l: c - 1, c, v: 1000,
+    }));
+    const last = candles[candles.length - 1].c; // ~98
+
+    const { supports, resistances } = detectKeyLevels(candles);
+
+    // No support may sit at or above the latest price …
+    expect(supports.every((s) => s.price < last)).toBe(true);
+    // … and the 184 swing low, now overhead, surfaces as resistance instead.
+    expect(supports.some((s) => Math.abs(s.price - 184) < 2)).toBe(false);
+    expect(resistances.some((r) => Math.abs(r.price - 184) < 2)).toBe(true);
+    expect(resistances.every((r) => r.price > last)).toBe(true);
+  });
 });
 
 describe('suggest helpers', () => {

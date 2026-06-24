@@ -1,14 +1,27 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTheme } from 'styled-components';
 import {
   createChart, ColorType, type IChartApi, type ISeriesApi, type Time, type IPriceLine,
 } from 'lightweight-charts';
+import type { AppTheme } from '@/styles/theme';
 import type { Candle } from '@/types/candle';
 
 export interface PriceLine { price: number; color: string; title: string; lineStyle?: 0 | 1 | 2 | 3 | 4 }
 
 interface Props { candles: Candle[]; lines?: PriceLine[]; onPriceClick?: (price: number) => void; height?: number }
+
+/** Theme-driven chart palette. Candles are blue (up) / red (down) — a
+ *  colorblind-friendly pair — and grid/text/axes follow the light/dark theme. */
+function chartColors(theme: AppTheme) {
+  return {
+    up: theme.mode === 'dark' ? '#38bdf8' : '#2563eb',
+    down: theme.colors.negative,
+    text: theme.colors.textMuted,
+    line: theme.colors.border,
+  };
+}
 
 export default function CandleChart({ candles, lines = [], onPriceClick, height = 300 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -16,24 +29,32 @@ export default function CandleChart({ candles, lines = [], onPriceClick, height 
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const clickRef = useRef(onPriceClick);
 
+  const theme = useTheme() as AppTheme;
+  const themeRef = useRef(theme);
+
+  // keep the latest theme available to the create-once effect without recreating
+  useEffect(() => { themeRef.current = theme; });
+
   useEffect(() => {
     clickRef.current = onPriceClick;
   }, [onPriceClick]);
 
-  // create chart once
+  // create chart once (read the latest theme via ref so a theme toggle doesn't
+  // recreate the chart — the colors effect below repaints it instead)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    const c = chartColors(themeRef.current);
     const chart = createChart(el, {
       height,
       autoSize: true,
-      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: '#8b9096' },
-      grid: { vertLines: { color: 'rgba(255,255,255,0.05)' }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
-      rightPriceScale: { borderColor: 'rgba(255,255,255,0.1)' },
-      timeScale: { borderColor: 'rgba(255,255,255,0.1)' },
+      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: c.text },
+      grid: { vertLines: { color: c.line }, horzLines: { color: c.line } },
+      rightPriceScale: { borderColor: c.line },
+      timeScale: { borderColor: c.line },
     });
     const series = chart.addCandlestickSeries({
-      upColor: '#34d399', downColor: '#f87171', wickUpColor: '#34d399', wickDownColor: '#f87171', borderVisible: false,
+      upColor: c.up, downColor: c.down, wickUpColor: c.up, wickDownColor: c.down, borderVisible: false,
     });
     chart.subscribeClick((param) => {
       if (!clickRef.current || !param.point) return;
@@ -44,6 +65,21 @@ export default function CandleChart({ candles, lines = [], onPriceClick, height 
     seriesRef.current = series;
     return () => { chart.remove(); chartRef.current = null; seriesRef.current = null; };
   }, [height]);
+
+  // repaint colors on theme (light/dark) change without recreating the chart
+  useEffect(() => {
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    if (!chart || !series) return;
+    const c = chartColors(theme);
+    chart.applyOptions({
+      layout: { textColor: c.text },
+      grid: { vertLines: { color: c.line }, horzLines: { color: c.line } },
+      rightPriceScale: { borderColor: c.line },
+      timeScale: { borderColor: c.line },
+    });
+    series.applyOptions({ upColor: c.up, downColor: c.down, wickUpColor: c.up, wickDownColor: c.down });
+  }, [theme]);
 
   // data
   useEffect(() => {
