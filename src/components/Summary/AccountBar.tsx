@@ -33,6 +33,12 @@ const Bar = styled.div`
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
+
+  @media (max-width: 520px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 `;
 
 const Block = styled.div<{ $right?: boolean }>`
@@ -41,6 +47,10 @@ const Block = styled.div<{ $right?: boolean }>`
   gap: 3px;
   min-width: 0;
   align-items: ${({ $right }) => ($right ? 'flex-end' : 'flex-start')};
+
+  @media (max-width: 520px) {
+    align-items: flex-start;
+  }
 `;
 
 const Lbl = styled.span`

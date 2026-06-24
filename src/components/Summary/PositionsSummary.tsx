@@ -13,12 +13,8 @@ import { capitalAtom } from '@/store/capitalAtom';
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-
-  @media (min-width: 480px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
 
   @media (min-width: 768px) {
     grid-template-columns: repeat(5, 1fr);
