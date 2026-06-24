@@ -49,6 +49,12 @@
     "fullPositionLabel": "1 Full Position = % risk",
     "openChart": "📈 Chart"
   },
+  "metricsInfo": {
+    "osFp": "Outstanding Full Positions — combined live risk of all open positions (entry → current stop), in units of one full position (1 FP = your full-position risk %). 0.99 ≈ about one full position still at risk.",
+    "sdd": "Stop Drawdown — P/L if exited at the current stop, measured from entry. Negative = loss; turns positive once the stop sits above entry (locked-in profit).",
+    "wdd": "Worst Drawdown — the original risk set at entry (entry → initial stop) = 1R. Always −1.00R.",
+    "mdd": "Max Drawdown — loss if price fell from now down to the stop (= SDD minus unrealized P/L). Your live money-at-risk."
+  },
   "summary": {
     "currentNav": "NAV",
     "totalPL": "Total P/L",

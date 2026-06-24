@@ -6,6 +6,7 @@ import styled from 'styled-components';
 import { useAtomValue } from 'jotai';
 import { useTranslations } from 'next-intl';
 import { tradeMetrics } from '@/lib/finance';
+import InfoTip from '@/components/ui/InfoTip';
 import { formatCurrency, formatPercent, getSymbolCurrency } from '@/lib/format';
 import { pricesAtom } from '@/store/pricesAtom';
 import { currencyAtom } from '@/store/currencyAtom';
@@ -189,13 +190,20 @@ const RiskCell = styled.div`
   background: ${({ theme }) => theme.colors.surfaceAlt};
 `;
 
+const RiskCellHead = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 3px;
+`;
+
 const RiskCellLabel = styled.p`
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: ${({ theme }) => theme.colors.textMuted};
-  margin: 0 0 3px;
+  margin: 0;
 `;
 
 const RiskCellValue = styled.p`
@@ -352,6 +360,7 @@ const CancelBtn = styled.button`
 
 export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: TradeCardProps) {
   const t = useTranslations('card');
+  const ti = useTranslations('metricsInfo');
   const prices = useAtomValue(pricesAtom);
   const currency = useAtomValue(currencyAtom);
   const fullPositionPct = useAtomValue(fullPositionPctAtom);
@@ -481,15 +490,24 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
         <RiskLabel>{t('risk')}</RiskLabel>
         <RiskGrid>
           <RiskCell>
-            <RiskCellLabel>SDD</RiskCellLabel>
+            <RiskCellHead>
+              <RiskCellLabel>SDD</RiskCellLabel>
+              <InfoTip label="SDD">{ti('sdd')}</InfoTip>
+            </RiskCellHead>
             <RiskCellValue>{formatRiskTriple(m.sdd, cur)}</RiskCellValue>
           </RiskCell>
           <RiskCell>
-            <RiskCellLabel>WDD</RiskCellLabel>
+            <RiskCellHead>
+              <RiskCellLabel>WDD</RiskCellLabel>
+              <InfoTip label="WDD">{ti('wdd')}</InfoTip>
+            </RiskCellHead>
             <RiskCellValue>{formatRiskTriple(m.wdd, cur)}</RiskCellValue>
           </RiskCell>
           <RiskCell>
-            <RiskCellLabel>MDD</RiskCellLabel>
+            <RiskCellHead>
+              <RiskCellLabel>MDD</RiskCellLabel>
+              <InfoTip label="MDD">{ti('mdd')}</InfoTip>
+            </RiskCellHead>
             <RiskCellValue>{formatRiskTriple(m.mdd, cur)}</RiskCellValue>
           </RiskCell>
         </RiskGrid>

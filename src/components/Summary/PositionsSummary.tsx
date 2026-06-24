@@ -27,6 +27,7 @@ const Grid = styled.div`
 
 export default function PositionsSummary() {
   const t = useTranslations('summary');
+  const ti = useTranslations('metricsInfo');
   const trades = useAtomValue(tradesAtom);
   const prices = useAtomValue(pricesAtom);
   const currency = useAtomValue(currencyAtom);
@@ -86,16 +87,19 @@ export default function PositionsSummary() {
       <StatTile
         label={t('osFp')}
         value={s.osFp.toFixed(2)}
+        info={ti('osFp')}
       />
       <StatTile
         label={t('sdd')}
         value={formatCurrency(s.sdd, currency, currency)}
         tone={s.sdd < 0 ? 'neg' : 'pos'}
+        info={ti('sdd')}
       />
       <StatTile
         label={t('mdd')}
         value={formatCurrency(s.mdd, currency, currency)}
         tone={s.mdd < 0 ? 'neg' : 'pos'}
+        info={ti('mdd')}
       />
     </Grid>
   );
