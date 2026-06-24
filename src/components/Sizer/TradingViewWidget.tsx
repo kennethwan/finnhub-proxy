@@ -49,32 +49,44 @@ export default function TradingViewWidget({ symbol }: TradingViewWidgetProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    container.innerHTML = '';
-    const widgetRoot = document.createElement('div');
-    widgetRoot.className = 'tradingview-widget-container__widget';
-    widgetRoot.style.width = '100%';
-    widgetRoot.style.height = '100%';
-    container.appendChild(widgetRoot);
+    let cancelled = false;
 
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-    script.type = 'text/javascript';
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      autosize: true,
-      symbol: normalizedSymbol,
-      interval: 'D',
-      timezone: 'Asia/Hong_Kong',
-      theme: 'dark',
-      style: '1',
-      locale: locale === 'zh-HK' ? 'zh_HK' : 'en',
-      allow_symbol_change: true,
-      calendar: false,
-      support_host: 'https://www.tradingview.com',
-    });
-    container.appendChild(script);
+    // Defer injection one tick so React StrictMode's dev double-invoke
+    // (mount → cleanup → mount) cancels the throwaway first pass before its
+    // async embed script is appended. Without this, the orphaned in-flight
+    // script runs a querySelector against the wiped container and throws.
+    const timer = window.setTimeout(() => {
+      if (cancelled || !container.isConnected) return;
+
+      container.innerHTML = '';
+      const widgetRoot = document.createElement('div');
+      widgetRoot.className = 'tradingview-widget-container__widget';
+      widgetRoot.style.width = '100%';
+      widgetRoot.style.height = '100%';
+      container.appendChild(widgetRoot);
+
+      const script = document.createElement('script');
+      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+      script.type = 'text/javascript';
+      script.async = true;
+      script.innerHTML = JSON.stringify({
+        autosize: true,
+        symbol: normalizedSymbol,
+        interval: 'D',
+        timezone: 'Asia/Hong_Kong',
+        theme: 'dark',
+        style: '1',
+        locale: locale === 'zh-HK' ? 'zh_HK' : 'en',
+        allow_symbol_change: true,
+        calendar: false,
+        support_host: 'https://www.tradingview.com',
+      });
+      container.appendChild(script);
+    }, 0);
 
     return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
       container.innerHTML = '';
     };
   }, [locale, normalizedSymbol]);
