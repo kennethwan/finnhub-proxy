@@ -264,6 +264,12 @@ export default function PositionSizerPanel({
   const [stopLossPercent, setStopLossPercent] = useState('');
   const [chartOpen, setChartOpen] = useState(false);
 
+  const updateSymbol = (next: string) => {
+    const upper = next.toUpperCase();
+    setSymbol(upper);
+    onSymbolChange?.(upper);
+  };
+
   const stop = stopLossType === 'price'
     ? parseFloat(stopLoss)
     : parseFloat(buyPrice) * (1 - parseFloat(stopLossPercent) / 100);
@@ -304,7 +310,7 @@ export default function PositionSizerPanel({
       stopLossHistory: [{ price: (result as Exclude<typeof result, { error: string } | null>).actualStopLoss, date: now, note: '初始止損' }],
     };
     await addTrade(trade);
-    setSymbol('');
+    updateSymbol('');
     setBuyPrice('');
     setStopLoss('');
     setStopLossPercent('');
@@ -331,11 +337,7 @@ export default function PositionSizerPanel({
           <Inp
             type="text"
             value={symbol}
-            onChange={(e) => {
-              const next = e.target.value.toUpperCase();
-              setSymbol(next);
-              onSymbolChange?.(next);
-            }}
+            onChange={(e) => updateSymbol(e.target.value)}
             placeholder="AAPL · TSLA · 0700.HK"
             style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
           />
@@ -390,10 +392,10 @@ export default function PositionSizerPanel({
         <FieldWrap>
           <Lbl>{t('stopLoss')}</Lbl>
           <SegGroup>
-            <Seg $active={stopLossType === 'price'} onClick={() => setStopLossType('price')}>
+            <Seg type="button" $active={stopLossType === 'price'} onClick={() => setStopLossType('price')}>
               {t('price')}
             </Seg>
-            <Seg $active={stopLossType === 'percent'} onClick={() => setStopLossType('percent')}>
+            <Seg type="button" $active={stopLossType === 'percent'} onClick={() => setStopLossType('percent')}>
               {t('percent')}
             </Seg>
           </SegGroup>
@@ -525,7 +527,7 @@ export default function PositionSizerPanel({
               )}
 
               {/* Add to positions */}
-              <AddBtn $enabled={canAdd} onClick={handleAdd} disabled={!canAdd}>
+              <AddBtn type="button" $enabled={canAdd} onClick={handleAdd} disabled={!canAdd}>
                 📋 {t('addTrade')}
               </AddBtn>
             </>
