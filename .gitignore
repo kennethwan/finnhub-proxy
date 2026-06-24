@@ -17,3 +17,6 @@ android/release.keystore
 android/app/keystore.properties
 *.iml
 .idea/
+.vercel
+supabase/.temp/
+.superpowers/
