@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import styled from 'styled-components';
 import { useAtomValue } from 'jotai';
+import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { tradeMetrics } from '@/lib/finance';
 import InfoTip from '@/components/ui/InfoTip';
@@ -27,6 +28,8 @@ interface TradeCardProps {
 
 type CardMode = 'view' | 'edit' | 'close';
 
+const fmtR = (r: number | null): string => (r == null ? '' : `${r >= 0 ? '+' : ''}${r.toFixed(2)}R`);
+
 // ── Card shell ────────────────────────────────────────────────────────────────
 
 const Card = styled.div<{ $isRiskFree: boolean }>`
@@ -34,7 +37,7 @@ const Card = styled.div<{ $isRiskFree: boolean }>`
   border: 1px solid ${({ $isRiskFree, theme }) =>
     $isRiskFree ? `${theme.colors.positive}35` : theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
-  padding: 12px 14px;
+  overflow: hidden;
   transition: border-color 0.2s;
 
   &:hover {
@@ -43,16 +46,31 @@ const Card = styled.div<{ $isRiskFree: boolean }>`
   }
 `;
 
-// ── Header ──────────────────────────────────────────────────────────────────
+// ── Collapsed header (always visible) ──────────────────────────────────────────
 
-const Header = styled.div`
+const HeaderBtn = styled.button`
+  width: 100%;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
 `;
 
-const HeaderLeft = styled.div`
+const HLeft = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+const TopLine = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
@@ -93,46 +111,77 @@ const DaysLabel = styled.span`
   color: ${({ theme }) => theme.colors.textFaint};
 `;
 
-const HeaderRight = styled.div`
-  text-align: right;
+const StopLine = styled.span`
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const StopLbl = styled.span`
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const HRight = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   flex-shrink: 0;
 `;
 
-const CurrentPrice = styled.p`
+const CurrentPrice = styled.span`
   font-family: monospace;
   font-variant-numeric: tabular-nums;
   font-size: 17px;
   font-weight: 600;
   line-height: 1;
-  margin: 0;
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const UnrealizedRow = styled.p<{ $positive: boolean }>`
+const PLLine = styled.span<{ $positive: boolean }>`
   font-family: monospace;
   font-variant-numeric: tabular-nums;
   font-size: 12.5px;
-  margin: 4px 0 0;
+  font-weight: 500;
   color: ${({ $positive, theme }) =>
     $positive ? theme.colors.positive : theme.colors.negative};
 `;
 
-const NoQuote = styled.p`
+const NoQuote = styled.span`
   font-family: monospace;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: ${({ theme }) => theme.colors.textFaint};
-  margin: 0;
 `;
 
-// ── Facts line (entry · shares · allocated · sizing) ────────────────────────────
+const Chevron = styled.span<{ $open: boolean }>`
+  display: inline-flex;
+  flex-shrink: 0;
+  color: ${({ theme }) => theme.colors.textFaint};
+  transition: transform 0.2s;
+  transform: rotate(${({ $open }) => ($open ? 180 : 0)}deg);
+`;
+
+// ── Expanded detail ─────────────────────────────────────────────────────────
+
+const Detail = styled.div`
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 12px 14px;
+`;
 
 const FactsLine = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  margin-top: 10px;
   font-family: monospace;
   font-variant-numeric: tabular-nums;
   font-size: 12px;
@@ -150,65 +199,21 @@ const Sep = styled.span`
   margin: 0 8px;
 `;
 
-// ── Risk strip (stop + R prominent, then SDD/WDD/MDD) ───────────────────────────
-
-const RiskBox = styled.div`
-  margin-top: 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.surfaceAlt};
-  padding: 9px 11px;
-`;
-
-const StopRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-`;
-
-const StopInfo = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-`;
-
-const StopLbl = styled.span`
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: ${({ theme }) => theme.colors.textMuted};
-`;
-
-const StopVal = styled.span`
-  font-family: monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: 15px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const RBadge = styled.span<{ $positive: boolean }>`
-  font-family: monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: 14px;
-  font-weight: 700;
-  flex-shrink: 0;
-  color: ${({ $positive, theme }) => ($positive ? theme.colors.positive : theme.colors.negative)};
-`;
-
 const RiskGrid = styled.div`
+  margin-top: 10px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
+  gap: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.border};
 `;
 
-const RiskCell = styled.div``;
+const RiskCell = styled.div`
+  padding: 8px 10px;
+  background: ${({ theme }) => theme.colors.surfaceAlt};
+`;
 
 const RiskCellHead = styled.div`
   display: flex;
@@ -234,8 +239,6 @@ const RiskCellValue = styled.p`
   margin: 0;
   line-height: 1.45;
 `;
-
-// ── Progress bar (→ risk free), slim ────────────────────────────────────────────
 
 const Progress = styled.div`
   display: flex;
@@ -265,15 +268,13 @@ const ProgFill = styled.div<{ $width: number }>`
   transition: width 0.3s ease;
 `;
 
-// ── Actions ───────────────────────────────────────────────────────────────────
-
 const ActionsRow = styled.div`
   margin-top: 10px;
   display: flex;
   gap: 8px;
 `;
 
-const ActionBtn = styled.button<{ $variant?: 'primary' | 'danger' | 'default' }>`
+const ActionBtn = styled.button<{ $variant?: 'primary' | 'default' }>`
   flex: 1;
   padding: 7px 12px;
   border-radius: 6px;
@@ -378,6 +379,7 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => setNow(Date.now()), []);
 
+  const [expanded, setExpanded] = useState(false);
   const [mode, setMode] = useState<CardMode>('view');
   const [input, setInput] = useState('');
   const [chartOpen, setChartOpen] = useState(false);
@@ -429,137 +431,134 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
     ? (m.marketPrice - trade.entryPrice) * trade.shares
     : null;
 
-  const stopR = m.sdd.r;
-
   return (
     <Card $isRiskFree={m.isRiskFree}>
-      {/* Header */}
-      <Header>
-        <HeaderLeft>
-          <Symbol>{trade.symbol}</Symbol>
-          <StatusChip $riskFree={m.isRiskFree}>
-            {m.isRiskFree ? `✅ ${t('status.riskFree')}` : `⚠️ ${t('status.atRisk')}`}
-          </StatusChip>
-          <DaysLabel>{m.days} {t('days')}</DaysLabel>
-        </HeaderLeft>
+      {/* Collapsed header — always shows price, P/L (with R), current stop */}
+      <HeaderBtn type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
+        <HLeft>
+          <TopLine>
+            <Symbol>{trade.symbol}</Symbol>
+            <StatusChip $riskFree={m.isRiskFree}>
+              {m.isRiskFree ? `✅ ${t('status.riskFree')}` : `⚠️ ${t('status.atRisk')}`}
+            </StatusChip>
+            <DaysLabel>{m.days} {t('days')}</DaysLabel>
+          </TopLine>
+          <StopLine>
+            <StopLbl>{t('currentStop')}</StopLbl>
+            {formatCurrency(trade.currentStopLoss, cur, currency)}
+          </StopLine>
+        </HLeft>
 
-        <HeaderRight>
+        <HRight>
           {m.marketPrice != null ? (
             <>
               <CurrentPrice>{formatCurrency(m.marketPrice, cur, currency)}</CurrentPrice>
-              <UnrealizedRow $positive={(unrealizedPnL ?? 0) >= 0}>
+              <PLLine $positive={(unrealizedPnL ?? 0) >= 0}>
                 {unrealizedPnL != null && (unrealizedPnL >= 0 ? '+' : '')}
                 {unrealizedPnL != null ? formatCurrency(unrealizedPnL, cur, currency) : '—'}
                 {m.changePct != null && ` · ${formatPercent(m.changePct)}`}
-              </UnrealizedRow>
+                {m.r != null && ` · ${fmtR(m.r)}`}
+              </PLLine>
             </>
           ) : (
             <NoQuote>{t('noQuote')}</NoQuote>
           )}
-        </HeaderRight>
-      </Header>
+        </HRight>
 
-      {/* Facts: entry · shares · allocated · sizing */}
-      <FactsLine>
-        <span><FactLbl>{t('entry')}</FactLbl>{formatCurrency(trade.entryPrice, cur, currency)}</span>
-        <Sep>·</Sep>
-        <span>{trade.shares} {t('shares')}</span>
-        <Sep>·</Sep>
-        <span><FactLbl>{t('allocated')}</FactLbl>{formatCurrency(m.amtAllocated, cur, currency)} ({m.pctAllocated.toFixed(1)}%)</span>
-        <Sep>·</Sep>
-        <span>{m.ptnSizing >= 1 ? `${m.ptnSizing.toFixed(2)} FP` : `${m.ptnSizing.toFixed(2)} HP`}</span>
-      </FactsLine>
+        <Chevron $open={expanded}><ChevronDown size={18} /></Chevron>
+      </HeaderBtn>
 
-      {/* Risk strip: stop + R prominent, then SDD / WDD / MDD */}
-      <RiskBox>
-        <StopRow>
-          <StopInfo>
-            <StopLbl>{t('currentStop')}</StopLbl>
-            <StopVal>{formatCurrency(trade.currentStopLoss, cur, currency)}</StopVal>
-          </StopInfo>
-          <RBadge $positive={stopR >= 0}>
-            {stopR >= 0 ? '+' : ''}{stopR.toFixed(2)}R
-          </RBadge>
-        </StopRow>
-        <RiskGrid>
-          <RiskCell>
-            <RiskCellHead>
-              <RiskCellLabel>SDD</RiskCellLabel>
-              <InfoTip label="SDD">{ti('sdd')}</InfoTip>
-            </RiskCellHead>
-            <RiskCellValue>{formatRiskTriple(m.sdd, cur)}</RiskCellValue>
-          </RiskCell>
-          <RiskCell>
-            <RiskCellHead>
-              <RiskCellLabel>WDD</RiskCellLabel>
-              <InfoTip label="WDD">{ti('wdd')}</InfoTip>
-            </RiskCellHead>
-            <RiskCellValue>{formatRiskTriple(m.wdd, cur)}</RiskCellValue>
-          </RiskCell>
-          <RiskCell>
-            <RiskCellHead>
-              <RiskCellLabel>MDD</RiskCellLabel>
-              <InfoTip label="MDD">{ti('mdd')}</InfoTip>
-            </RiskCellHead>
-            <RiskCellValue>{formatRiskTriple(m.mdd, cur)}</RiskCellValue>
-          </RiskCell>
-        </RiskGrid>
-      </RiskBox>
+      {/* Expanded detail */}
+      {expanded && (
+        <Detail>
+          <FactsLine>
+            <span><FactLbl>{t('entry')}</FactLbl>{formatCurrency(trade.entryPrice, cur, currency)}</span>
+            <Sep>·</Sep>
+            <span>{trade.shares} {t('shares')}</span>
+            <Sep>·</Sep>
+            <span><FactLbl>{t('allocated')}</FactLbl>{formatCurrency(m.amtAllocated, cur, currency)} ({m.pctAllocated.toFixed(1)}%)</span>
+            <Sep>·</Sep>
+            <span>{m.ptnSizing >= 1 ? `${m.ptnSizing.toFixed(2)} FP` : `${m.ptnSizing.toFixed(2)} HP`}</span>
+          </FactsLine>
 
-      {/* → Risk Free progress (only when not yet risk-free) */}
-      {!m.isRiskFree && (
-        <Progress>
-          <span>→ {t('toRiskFree')}</span>
-          <ProgTrack><ProgFill $width={rfProgress} /></ProgTrack>
-          <span>{rfProgress.toFixed(0)}%</span>
-        </Progress>
+          <RiskGrid>
+            <RiskCell>
+              <RiskCellHead>
+                <RiskCellLabel>SDD</RiskCellLabel>
+                <InfoTip label="SDD">{ti('sdd')}</InfoTip>
+              </RiskCellHead>
+              <RiskCellValue>{formatRiskTriple(m.sdd, cur)}</RiskCellValue>
+            </RiskCell>
+            <RiskCell>
+              <RiskCellHead>
+                <RiskCellLabel>WDD</RiskCellLabel>
+                <InfoTip label="WDD">{ti('wdd')}</InfoTip>
+              </RiskCellHead>
+              <RiskCellValue>{formatRiskTriple(m.wdd, cur)}</RiskCellValue>
+            </RiskCell>
+            <RiskCell>
+              <RiskCellHead>
+                <RiskCellLabel>MDD</RiskCellLabel>
+                <InfoTip label="MDD">{ti('mdd')}</InfoTip>
+              </RiskCellHead>
+              <RiskCellValue>{formatRiskTriple(m.mdd, cur)}</RiskCellValue>
+            </RiskCell>
+          </RiskGrid>
+
+          {!m.isRiskFree && (
+            <Progress>
+              <span>→ {t('toRiskFree')}</span>
+              <ProgTrack><ProgFill $width={rfProgress} /></ProgTrack>
+              <span>{rfProgress.toFixed(0)}%</span>
+            </Progress>
+          )}
+
+          <ActionsRow>
+            {mode === 'edit' ? (
+              <InlineForm>
+                <InlineInput
+                  type="number"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={t('newStopPlaceholder')}
+                  step="0.01"
+                  autoFocus
+                />
+                <ConfirmBtn $color="amber" onClick={handleUpdateStop}>✓</ConfirmBtn>
+                <CancelBtn onClick={handleCancel}>✕</CancelBtn>
+              </InlineForm>
+            ) : mode === 'close' ? (
+              <InlineForm>
+                <InlineInput
+                  type="number"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={t('exitPlaceholder')}
+                  step="0.01"
+                  autoFocus
+                />
+                <ConfirmBtn $color="green" onClick={handleClose}>✓</ConfirmBtn>
+                <CancelBtn onClick={handleCancel}>✕</CancelBtn>
+              </InlineForm>
+            ) : (
+              <>
+                <ActionBtn
+                  $variant="primary"
+                  onClick={() => {
+                    setInput(trade.currentStopLoss.toString());
+                    setMode('edit');
+                  }}
+                >
+                  📈 {t('updateStop')}
+                </ActionBtn>
+                <ActionBtn onClick={() => setMode('close')}>🏁 {t('close')}</ActionBtn>
+                <ActionBtn onClick={() => setChartOpen(true)}>{t('chart')}</ActionBtn>
+                <IconBtn onClick={() => onDelete(trade.id)} title={t('delete')}>🗑️</IconBtn>
+              </>
+            )}
+          </ActionsRow>
+        </Detail>
       )}
-
-      {/* Actions */}
-      <ActionsRow>
-        {mode === 'edit' ? (
-          <InlineForm>
-            <InlineInput
-              type="number"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t('newStopPlaceholder')}
-              step="0.01"
-              autoFocus
-            />
-            <ConfirmBtn $color="amber" onClick={handleUpdateStop}>✓</ConfirmBtn>
-            <CancelBtn onClick={handleCancel}>✕</CancelBtn>
-          </InlineForm>
-        ) : mode === 'close' ? (
-          <InlineForm>
-            <InlineInput
-              type="number"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t('exitPlaceholder')}
-              step="0.01"
-              autoFocus
-            />
-            <ConfirmBtn $color="green" onClick={handleClose}>✓</ConfirmBtn>
-            <CancelBtn onClick={handleCancel}>✕</CancelBtn>
-          </InlineForm>
-        ) : (
-          <>
-            <ActionBtn
-              $variant="primary"
-              onClick={() => {
-                setInput(trade.currentStopLoss.toString());
-                setMode('edit');
-              }}
-            >
-              📈 {t('updateStop')}
-            </ActionBtn>
-            <ActionBtn onClick={() => setMode('close')}>🏁 {t('close')}</ActionBtn>
-            <ActionBtn onClick={() => setChartOpen(true)}>{t('chart')}</ActionBtn>
-            <IconBtn onClick={() => onDelete(trade.id)} title={t('delete')}>🗑️</IconBtn>
-          </>
-        )}
-      </ActionsRow>
 
       <TradeChartDialog
         open={chartOpen}

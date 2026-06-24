@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAtomValue } from 'jotai';
+import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { tradeMetrics } from '@/lib/finance';
-import { formatCurrency, getSymbolCurrency } from '@/lib/format';
+import { formatCurrency, formatPercent, getSymbolCurrency } from '@/lib/format';
 import { currencyAtom } from '@/store/currencyAtom';
 import { capitalAtom } from '@/store/capitalAtom';
 import { fullPositionPctAtom } from '@/store/fullPositionAtom';
@@ -18,14 +19,16 @@ interface HistoryCardProps {
   onDelete: (id: Trade['id']) => void;
 }
 
-// ── Styled Components ─────────────────────────────────────────────────────────
+const fmtR = (r: number | null): string => (r == null ? '' : `${r >= 0 ? '+' : ''}${r.toFixed(2)}R`);
+
+// ── Card shell ────────────────────────────────────────────────────────────────
 
 const Card = styled.div<{ $win: boolean }>`
   border-radius: 12px;
   border: 1px solid ${({ $win, theme }) =>
     $win ? `${theme.colors.positive}35` : `${theme.colors.negative}35`};
   background: ${({ theme }) => theme.colors.surface};
-  padding: 16px;
+  overflow: hidden;
   transition: border-color 0.2s;
 
   &:hover {
@@ -34,14 +37,29 @@ const Card = styled.div<{ $win: boolean }>`
   }
 `;
 
-const Header = styled.div`
+const HeaderBtn = styled.button`
+  width: 100%;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
 `;
 
-const HeaderLeft = styled.div`
+const HLeft = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+const TopLine = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
@@ -52,7 +70,7 @@ const HeaderLeft = styled.div`
 const Symbol = styled.span`
   font-family: monospace;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 17px;
   color: ${({ theme }) => theme.colors.text};
   letter-spacing: -0.02em;
 `;
@@ -64,8 +82,8 @@ const WinLossChip = styled.span<{ $win: boolean }>`
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 2px 8px;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
   border-radius: 4px;
   background: ${({ $win, theme }) =>
     $win ? `${theme.colors.positive}15` : `${theme.colors.negative}15`};
@@ -82,77 +100,93 @@ const DaysLabel = styled.span`
   color: ${({ theme }) => theme.colors.textFaint};
 `;
 
-const HeaderRight = styled.div`
-  text-align: right;
-  flex-shrink: 0;
-`;
-
-const ExitPrice = styled.p`
+const EntryLine = styled.span`
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
   font-family: monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1;
-  margin: 0;
+  font-size: 12.5px;
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const RealizedPnL = styled.p<{ $positive: boolean }>`
+const SmallLbl = styled.span`
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const HRight = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+`;
+
+const ExitPrice = styled.span`
   font-family: monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  margin: 4px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const RealizedPnL = styled.span<{ $positive: boolean }>`
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  font-weight: 500;
   color: ${({ $positive, theme }) =>
     $positive ? theme.colors.positive : theme.colors.negative};
 `;
 
-// ── Metrics grid ──────────────────────────────────────────────────────────────
-
-const MetricsGrid = styled.div`
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.border};
+const Chevron = styled.span<{ $open: boolean }>`
+  display: inline-flex;
+  flex-shrink: 0;
+  color: ${({ theme }) => theme.colors.textFaint};
+  transition: transform 0.2s;
+  transform: rotate(${({ $open }) => ($open ? 180 : 0)}deg);
 `;
 
-const MetricCell = styled.div`
-  padding: 8px 10px;
-  background: ${({ theme }) => theme.colors.surface};
+// ── Expanded detail ─────────────────────────────────────────────────────────
+
+const Detail = styled.div`
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 `;
 
-const MetricLabel = styled.p`
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: ${({ theme }) => theme.colors.textMuted};
-  margin: 0;
-`;
-
-const MetricValue = styled.p`
+const FactsLine = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   font-family: monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  font-weight: 500;
-  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
   color: ${({ theme }) => theme.colors.text};
 `;
 
-// ── Actions ───────────────────────────────────────────────────────────────────
+const FactLbl = styled.span`
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-right: 4px;
+`;
 
-const ActionsRow = styled.div`
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+const Sep = styled.span`
+  color: ${({ theme }) => theme.colors.textFaint};
+  margin: 0 8px;
 `;
 
 const IconBtn = styled.button`
-  padding: 8px 10px;
+  flex-shrink: 0;
+  padding: 7px 10px;
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
@@ -181,6 +215,8 @@ export default function HistoryCard({ trade, onDelete }: HistoryCardProps) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => setNow(Date.now()), []);
 
+  const [expanded, setExpanded] = useState(false);
+
   const cur = getSymbolCurrency(trade.symbol);
   const pnl = trade.pnl ?? 0;
   const isWin = pnl >= 0;
@@ -198,61 +234,47 @@ export default function HistoryCard({ trade, onDelete }: HistoryCardProps) {
 
   return (
     <Card $win={isWin}>
-      {/* Header */}
-      <Header>
-        <HeaderLeft>
-          <Symbol>{trade.symbol}</Symbol>
-          <WinLossChip $win={isWin}>
-            {isWin ? th('win') : th('loss')}
-          </WinLossChip>
-          <DaysLabel>{m.days} {t('days')}</DaysLabel>
-        </HeaderLeft>
+      {/* Collapsed header — symbol, result, exit price, realized P/L (with R) */}
+      <HeaderBtn type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
+        <HLeft>
+          <TopLine>
+            <Symbol>{trade.symbol}</Symbol>
+            <WinLossChip $win={isWin}>{isWin ? th('win') : th('loss')}</WinLossChip>
+            <DaysLabel>{m.days} {t('days')}</DaysLabel>
+          </TopLine>
+          <EntryLine>
+            <SmallLbl>{t('entry')}</SmallLbl>
+            {formatCurrency(trade.entryPrice, cur, currency)}
+          </EntryLine>
+        </HLeft>
 
-        <HeaderRight>
-          <ExitPrice>
-            {formatCurrency(trade.exitPrice ?? 0, cur, currency)}
-          </ExitPrice>
+        <HRight>
+          <ExitPrice>{formatCurrency(trade.exitPrice ?? 0, cur, currency)}</ExitPrice>
           <RealizedPnL $positive={isWin}>
-            {pnl >= 0 ? '+' : ''}
-            {formatCurrency(pnl, cur, currency)}
+            {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, cur, currency)}
+            {m.changePct != null && ` · ${formatPercent(m.changePct)}`}
+            {m.r != null && ` · ${fmtR(m.r)}`}
           </RealizedPnL>
-        </HeaderRight>
-      </Header>
+        </HRight>
 
-      {/* Metrics grid — 3×2 */}
-      <MetricsGrid>
-        <MetricCell>
-          <MetricLabel>{t('entry')}</MetricLabel>
-          <MetricValue>{formatCurrency(trade.entryPrice, cur, currency)}</MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>{th('exit')}</MetricLabel>
-          <MetricValue>{formatCurrency(trade.exitPrice ?? 0, cur, currency)}</MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>{t('shares')}</MetricLabel>
-          <MetricValue>{trade.shares}</MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>{t('currentStop')}</MetricLabel>
-          <MetricValue>{formatCurrency(trade.initialStopLoss, cur, currency)}</MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>{t('allocated')}</MetricLabel>
-          <MetricValue>{formatCurrency(amtAllocated, cur, currency)}</MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>%C</MetricLabel>
-          <MetricValue>{pctAllocated.toFixed(1)}%</MetricValue>
-        </MetricCell>
-      </MetricsGrid>
+        <Chevron $open={expanded}><ChevronDown size={18} /></Chevron>
+      </HeaderBtn>
 
-      {/* Actions */}
-      <ActionsRow>
-        <IconBtn onClick={() => onDelete(trade.id)} title={t('delete')}>
-          🗑️
-        </IconBtn>
-      </ActionsRow>
+      {/* Expanded detail */}
+      {expanded && (
+        <Detail>
+          <FactsLine>
+            <span><FactLbl>{th('exit')}</FactLbl>{formatCurrency(trade.exitPrice ?? 0, cur, currency)}</span>
+            <Sep>·</Sep>
+            <span>{trade.shares} {t('shares')}</span>
+            <Sep>·</Sep>
+            <span><FactLbl>{t('allocated')}</FactLbl>{formatCurrency(amtAllocated, cur, currency)} ({pctAllocated.toFixed(1)}%)</span>
+            <Sep>·</Sep>
+            <span><FactLbl>{t('currentStop')}</FactLbl>{formatCurrency(trade.initialStopLoss, cur, currency)}</span>
+          </FactsLine>
+          <IconBtn onClick={() => onDelete(trade.id)} title={t('delete')}>🗑️</IconBtn>
+        </Detail>
+      )}
     </Card>
   );
 }
