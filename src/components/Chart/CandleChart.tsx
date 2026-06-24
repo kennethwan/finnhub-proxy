@@ -15,7 +15,10 @@ export default function CandleChart({ candles, lines = [], onPriceClick, height 
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const clickRef = useRef(onPriceClick);
-  clickRef.current = onPriceClick;
+
+  useEffect(() => {
+    clickRef.current = onPriceClick;
+  }, [onPriceClick]);
 
   // create chart once
   useEffect(() => {

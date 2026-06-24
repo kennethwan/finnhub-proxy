@@ -69,7 +69,7 @@ const RefreshBtn = styled.button`
 
   &:hover:not(:disabled) {
     color: ${({ theme }) => theme.colors.text};
-    border-color: ${({ theme }) => `rgba(255,255,255,0.2)`};
+    border-color: rgba(255,255,255,0.2);
     background: ${({ theme }) => `${theme.colors.text}08`};
   }
 
