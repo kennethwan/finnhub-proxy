@@ -69,11 +69,6 @@ export default function PositionsSummary() {
             : 'muted'
         }
       />
-      <StatTile
-        label={t('realized')}
-        value={formatCurrency(s.realized, currency, currency)}
-        tone={s.realized >= 0 ? 'pos' : 'neg'}
-      />
 
       {/* Row 2: Exposure / Risk */}
       <StatTile

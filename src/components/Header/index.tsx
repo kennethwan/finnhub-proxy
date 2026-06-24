@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import styled from 'styled-components';
 import { useAtom } from 'jotai';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Settings as SettingsIcon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { themeAtom } from '@/store/themeAtom';
@@ -12,6 +12,7 @@ import { currencyAtom } from '@/store/currencyAtom';
 import { locales } from '@/i18n/config';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
+import SettingsModal from '@/components/Settings';
 
 const Bar = styled.header`
   position: sticky; top: 0; z-index: 40;
@@ -101,6 +102,7 @@ export default function Header() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const switchLocale = () => {
     const next = locales.find((l) => l !== locale) ?? locale;
@@ -122,6 +124,9 @@ export default function Header() {
           <Btn onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); writeThemeCookie(next); }} aria-label={th('theme')}>
             {mode === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </Btn>
+          <Btn onClick={() => setSettingsOpen(true)} aria-label={th('settings')}>
+            <SettingsIcon size={14} />
+          </Btn>
           {user ? (
             <>
               <EmailText title={user.email ?? ''}>{user.email ?? ''}</EmailText>
@@ -136,6 +141,7 @@ export default function Header() {
         </Controls>
       </Bar>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );
 }

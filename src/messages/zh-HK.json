@@ -10,7 +10,15 @@
   },
   "header": {
     "theme": "主題",
-    "language": "語言"
+    "language": "語言",
+    "settings": "設定"
+  },
+  "settings": {
+    "title": "設定",
+    "capital": "💰 初始本金",
+    "fullPosition": "1 個全倉風險 %",
+    "fullPositionHint": "每個全倉嘅風險，佔本金嘅 %。影響 O/S FP 同 SDD/MDD 嘅 R 倍數。",
+    "done": "完成"
   },
   "auth": {
     "login": "登入",

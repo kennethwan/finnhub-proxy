@@ -4,14 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import styled from 'styled-components';
 import type { ChartContext } from '@/components/Chart/KeyLevelChart';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { useTranslations } from 'next-intl';
 import { calculatePosition } from '@/lib/finance';
 import { formatCurrency, getSymbolCurrency } from '@/lib/format';
 import { useTrades } from '@/hooks/useTrades';
 import { currencyAtom } from '@/store/currencyAtom';
 import { capitalAtom } from '@/store/capitalAtom';
-import { fullPositionPctAtom } from '@/store/fullPositionAtom';
 import type { Trade } from '@/types/trade';
 
 const StopTargetChartDialog = dynamic(
@@ -258,8 +257,9 @@ export default function PositionSizerPanel({
   const { addTrade } = useTrades();
 
   const [symbol, setSymbol] = useState('');
-  const [capital, setCapital] = useAtom(capitalAtom);
-  const [fullPositionPct, setFullPositionPct] = useAtom(fullPositionPctAtom);
+  // Capital is an account-level setting (edited in the ⚙️ Settings modal); the
+  // calculator only reads it.
+  const capital = useAtomValue(capitalAtom);
   const [maxLossPercent, setMaxLossPercent] = useState('0.5');
   const [buyPrice, setBuyPrice] = useState('');
   const [targetPrice, setTargetPrice] = useState('');
@@ -367,26 +367,16 @@ export default function PositionSizerPanel({
           />
         </FieldWrap>
 
-        {/* Capital + maxLoss */}
-        <Row2>
-          <FieldWrap>
-            <Lbl>{t('capital')}</Lbl>
-            <Inp
-              type="number"
-              value={capital}
-              onChange={(e) => setCapital(e.target.value)}
-            />
-          </FieldWrap>
-          <FieldWrap>
-            <Lbl>{t('maxLoss')}</Lbl>
-            <Inp
-              type="number"
-              value={maxLossPercent}
-              step="0.1"
-              onChange={(e) => setMaxLossPercent(e.target.value)}
-            />
-          </FieldWrap>
-        </Row2>
+        {/* Max loss % (per trade) */}
+        <FieldWrap>
+          <Lbl>{t('maxLoss')}</Lbl>
+          <Inp
+            type="number"
+            value={maxLossPercent}
+            step="0.1"
+            onChange={(e) => setMaxLossPercent(e.target.value)}
+          />
+        </FieldWrap>
 
         {/* Buy price + target */}
         <Row2>
@@ -460,21 +450,6 @@ export default function PositionSizerPanel({
               {t('openChart')}
             </ChartBtn>
           )}
-        </FieldWrap>
-        {/* Full-Position % setting */}
-        <FieldWrap>
-          <Lbl>{t('fullPositionLabel')}</Lbl>
-          <InpRelative>
-            <Inp
-              type="number"
-              value={fullPositionPct}
-              step="0.1"
-              min="0"
-              max="100"
-              onChange={(e) => setFullPositionPct(parseFloat(e.target.value) || 0)}
-            />
-            <PctSuffix>%</PctSuffix>
-          </InpRelative>
         </FieldWrap>
       </Body>
 

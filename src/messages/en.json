@@ -10,7 +10,15 @@
   },
   "header": {
     "theme": "Theme",
-    "language": "Language"
+    "language": "Language",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "capital": "💰 Initial Capital",
+    "fullPosition": "1 Full Position Risk %",
+    "fullPositionHint": "Risk per full position, as a % of capital. Drives the O/S FP metric and the SDD/MDD R-multiples.",
+    "done": "Done"
   },
   "auth": {
     "login": "Log In",
