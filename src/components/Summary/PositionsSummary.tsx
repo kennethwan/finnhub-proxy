@@ -47,17 +47,6 @@ export default function PositionsSummary() {
 
   return (
     <Grid>
-      {/* Row 1: NAV */}
-      <StatTile
-        label={t('currentNav')}
-        value={formatCurrency(s.nav, currency, currency)}
-        accent
-      />
-      <StatTile
-        label={t('totalPL')}
-        value={formatCurrency(s.totalPL, currency, currency)}
-        tone={s.totalPL >= 0 ? 'pos' : 'neg'}
-      />
       <StatTile
         label={t('unrealized')}
         value={

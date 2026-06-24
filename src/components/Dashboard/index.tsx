@@ -5,6 +5,8 @@ import { useAtom } from 'jotai';
 import { useTranslations } from 'next-intl';
 import { activeTabAtom } from '@/store/uiAtom';
 import type { ActiveTab } from '@/store/uiAtom';
+import { usePricePolling } from '@/hooks/usePricePolling';
+import AccountBar from '@/components/Summary/AccountBar';
 import SizerWorkspace from '@/components/Sizer/SizerWorkspace';
 import Positions from '@/components/Positions';
 import History from '@/components/History';
@@ -53,6 +55,9 @@ const Footer = styled.p`
 export default function Dashboard() {
   const t = useTranslations('nav');
   const [activeTab, setActiveTab] = useAtom(activeTabAtom);
+  // Poll open-position quotes globally so NAV / total P/L (in the account bar)
+  // stay live on every tab, not just while the positions tab is mounted.
+  const polling = usePricePolling();
 
   const tabs: { key: ActiveTab; label: string }[] = [
     { key: 'calculator', label: t('calculator') },
@@ -62,6 +67,8 @@ export default function Dashboard() {
 
   return (
     <>
+      <AccountBar />
+
       <TabsRow role="tablist">
         {tabs.map((tab) => (
           <Tab
@@ -79,7 +86,7 @@ export default function Dashboard() {
       {activeTab === 'calculator' ? (
         <SizerWorkspace />
       ) : (
-        <ListContainer>{activeTab === 'positions' ? <Positions /> : <History />}</ListContainer>
+        <ListContainer>{activeTab === 'positions' ? <Positions polling={polling} /> : <History />}</ListContainer>
       )}
 
       <Footer>{t('footer')}</Footer>

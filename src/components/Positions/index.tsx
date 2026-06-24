@@ -105,10 +105,14 @@ const EmptyState = styled.div`
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function Positions() {
+interface PositionsProps {
+  polling: ReturnType<typeof usePricePolling>;
+}
+
+export default function Positions({ polling }: PositionsProps) {
   const t = useTranslations('positions');
   const { trades, updateStop, closeTrade, removeTrade } = useTrades();
-  const { loading, error, refresh } = usePricePolling();
+  const { loading, error, refresh } = polling;
 
   const open = trades
     .filter((t) => t.status === 'open')
