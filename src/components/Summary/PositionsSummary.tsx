@@ -48,23 +48,6 @@ export default function PositionsSummary() {
   return (
     <Grid>
       <StatTile
-        label={t('unrealized')}
-        value={
-          s.hasLiveUnrealized
-            ? formatCurrency(s.unrealized, currency, currency)
-            : '—'
-        }
-        tone={
-          s.hasLiveUnrealized
-            ? s.unrealized >= 0
-              ? 'pos'
-              : 'neg'
-            : 'muted'
-        }
-      />
-
-      {/* Row 2: Exposure / Risk */}
-      <StatTile
         label={t('pctInvested')}
         value={`${s.pctInvested.toFixed(1)}%`}
       />

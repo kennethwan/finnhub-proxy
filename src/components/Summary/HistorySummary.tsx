@@ -21,7 +21,7 @@ const Grid = styled.div`
   }
 
   @media (min-width: 768px) {
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(6, 1fr);
   }
 `;
 
@@ -37,11 +37,6 @@ export default function HistorySummary() {
 
   return (
     <Grid>
-      <StatTile
-        label={t('realized')}
-        value={formatCurrency(h.realized, currency, currency)}
-        tone={h.realized >= 0 ? 'pos' : 'neg'}
-      />
       <StatTile
         label={t('count')}
         value={h.count}
