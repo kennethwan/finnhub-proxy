@@ -3,6 +3,10 @@
     "title": "Position Sizer",
     "subtitle": "Risk Dashboard"
   },
+  "sizerPage": {
+    "title": "Sizer Workspace",
+    "chartLabel": "TradingView Chart"
+  },
   "header": {
     "theme": "Theme",
     "language": "Language"
