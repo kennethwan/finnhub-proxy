@@ -27,21 +27,23 @@ interface TradeCardProps {
 
 type CardMode = 'view' | 'edit' | 'close';
 
-// ── Styled Components ─────────────────────────────────────────────────────────
+// ── Card shell ────────────────────────────────────────────────────────────────
 
 const Card = styled.div<{ $isRiskFree: boolean }>`
   border-radius: 12px;
   border: 1px solid ${({ $isRiskFree, theme }) =>
     $isRiskFree ? `${theme.colors.positive}35` : theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
-  padding: 16px;
+  padding: 12px 14px;
   transition: border-color 0.2s;
 
   &:hover {
     border-color: ${({ $isRiskFree, theme }) =>
-      $isRiskFree ? `${theme.colors.positive}50` : `rgba(255,255,255,0.2)`};
+      $isRiskFree ? `${theme.colors.positive}50` : theme.colors.border};
   }
 `;
+
+// ── Header ──────────────────────────────────────────────────────────────────
 
 const Header = styled.div`
   display: flex;
@@ -61,7 +63,7 @@ const HeaderLeft = styled.div`
 const Symbol = styled.span`
   font-family: monospace;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 17px;
   color: ${({ theme }) => theme.colors.text};
   letter-spacing: -0.02em;
 `;
@@ -73,8 +75,8 @@ const StatusChip = styled.span<{ $riskFree: boolean }>`
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 2px 8px;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
   border-radius: 4px;
   background: ${({ $riskFree, theme }) =>
     $riskFree ? `${theme.colors.positive}15` : `${theme.colors.negative}15`};
@@ -99,7 +101,7 @@ const HeaderRight = styled.div`
 const CurrentPrice = styled.p`
   font-family: monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   line-height: 1;
   margin: 0;
@@ -109,7 +111,7 @@ const CurrentPrice = styled.p`
 const UnrealizedRow = styled.p<{ $positive: boolean }>`
   font-family: monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 13px;
+  font-size: 12.5px;
   margin: 4px 0 0;
   color: ${({ $positive, theme }) =>
     $positive ? theme.colors.positive : theme.colors.negative};
@@ -124,77 +126,95 @@ const NoQuote = styled.p`
   margin: 0;
 `;
 
-// ── Metrics grid ──────────────────────────────────────────────────────────────
+// ── Facts line (entry · shares · allocated · sizing) ────────────────────────────
 
-const MetricsGrid = styled.div`
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.border};
-`;
-
-const MetricCell = styled.div`
-  padding: 8px 10px;
-  background: ${({ theme }) => theme.colors.surface};
-`;
-
-const MetricLabel = styled.p`
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: ${({ theme }) => theme.colors.textMuted};
-  margin: 0;
-`;
-
-const MetricValue = styled.p`
+const FactsLine = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
   font-family: monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  font-weight: 500;
-  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
   color: ${({ theme }) => theme.colors.text};
 `;
 
-// ── Risk row ──────────────────────────────────────────────────────────────────
-
-const RiskSection = styled.div`
-  margin-top: 10px;
+const FactLbl = styled.span`
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-right: 4px;
 `;
 
-const RiskLabel = styled.p`
+const Sep = styled.span`
+  color: ${({ theme }) => theme.colors.textFaint};
+  margin: 0 8px;
+`;
+
+// ── Risk strip (stop + R prominent, then SDD/WDD/MDD) ───────────────────────────
+
+const RiskBox = styled.div`
+  margin-top: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surfaceAlt};
+  padding: 9px 11px;
+`;
+
+const StopRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const StopInfo = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+`;
+
+const StopLbl = styled.span`
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: ${({ theme }) => theme.colors.textMuted};
-  margin: 0 0 6px;
+`;
+
+const StopVal = styled.span`
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const RBadge = styled.span<{ $positive: boolean }>`
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: ${({ $positive, theme }) => ($positive ? theme.colors.positive : theme.colors.negative)};
 `;
 
 const RiskGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 1px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.border};
+  gap: 8px;
 `;
 
-const RiskCell = styled.div`
-  padding: 8px 10px;
-  background: ${({ theme }) => theme.colors.surfaceAlt};
-`;
+const RiskCell = styled.div``;
 
 const RiskCellHead = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
-  margin: 0 0 3px;
+  margin: 0 0 2px;
 `;
 
 const RiskCellLabel = styled.p`
@@ -212,34 +232,32 @@ const RiskCellValue = styled.p`
   font-size: 11px;
   color: ${({ theme }) => theme.colors.text};
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.45;
 `;
 
-// ── Progress bar ──────────────────────────────────────────────────────────────
+// ── Progress bar (→ risk free), slim ────────────────────────────────────────────
 
-const ProgressSection = styled.div`
-  margin-top: 12px;
-`;
-
-const ProgressHeader = styled.div`
+const Progress = styled.div`
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
   font-family: monospace;
-  font-size: 11px;
-  color: ${({ theme }) => theme.colors.textFaint};
-  margin-bottom: 6px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  color: ${({ theme }) => theme.colors.textFaint};
 `;
 
-const ProgressTrack = styled.div`
+const ProgTrack = styled.div`
+  flex: 1;
   height: 4px;
   border-radius: 9999px;
-  background: ${({ theme }) => `${theme.colors.border}`};
+  background: ${({ theme }) => theme.colors.border};
   overflow: hidden;
 `;
 
-const ProgressFill = styled.div<{ $width: number }>`
+const ProgFill = styled.div<{ $width: number }>`
   height: 100%;
   width: ${({ $width }) => $width}%;
   background: linear-gradient(to right, #f59e0b, #34d399);
@@ -250,14 +268,14 @@ const ProgressFill = styled.div<{ $width: number }>`
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 const ActionsRow = styled.div`
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   gap: 8px;
 `;
 
 const ActionBtn = styled.button<{ $variant?: 'primary' | 'danger' | 'default' }>`
   flex: 1;
-  padding: 8px 12px;
+  padding: 7px 12px;
   border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
@@ -265,32 +283,22 @@ const ActionBtn = styled.button<{ $variant?: 'primary' | 'danger' | 'default' }>
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   border: 1px solid ${({ $variant, theme }) =>
-    $variant === 'danger' ? `${theme.colors.negative}40` :
-    $variant === 'primary' ? `${theme.colors.accent}40` :
-    theme.colors.border};
+    $variant === 'primary' ? `${theme.colors.accent}40` : theme.colors.border};
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? `${theme.colors.negative}10` :
-    $variant === 'primary' ? `${theme.colors.accent}10` :
-    `${theme.colors.text}05`};
+    $variant === 'primary' ? `${theme.colors.accent}10` : `${theme.colors.text}05`};
   color: ${({ $variant, theme }) =>
-    $variant === 'danger' ? theme.colors.negative :
-    $variant === 'primary' ? theme.colors.accent :
-    theme.colors.textMuted};
+    $variant === 'primary' ? theme.colors.accent : theme.colors.textMuted};
 
   &:hover {
     background: ${({ $variant, theme }) =>
-      $variant === 'danger' ? `${theme.colors.negative}18` :
-      $variant === 'primary' ? `${theme.colors.accent}18` :
-      `${theme.colors.text}0a`};
+      $variant === 'primary' ? `${theme.colors.accent}18` : `${theme.colors.text}0a`};
     color: ${({ $variant, theme }) =>
-      $variant === 'danger' ? theme.colors.negative :
-      $variant === 'primary' ? theme.colors.accent :
-      theme.colors.text};
+      $variant === 'primary' ? theme.colors.accent : theme.colors.text};
   }
 `;
 
 const IconBtn = styled.button`
-  padding: 8px 10px;
+  padding: 7px 10px;
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
@@ -336,7 +344,7 @@ const ConfirmBtn = styled.button<{ $color: 'amber' | 'green' }>`
   font-weight: 600;
   cursor: pointer;
   border: none;
-  background: ${({ $color }) => $color === 'amber' ? '#f59e0b' : '#10b981'};
+  background: ${({ $color }) => ($color === 'amber' ? '#f59e0b' : '#10b981')};
   color: #000;
   transition: opacity 0.15s;
 
@@ -395,18 +403,14 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
 
   const handleUpdateStop = () => {
     const val = parseFloat(input);
-    if (!isNaN(val)) {
-      onUpdateStop(trade.id, val);
-    }
+    if (!isNaN(val)) onUpdateStop(trade.id, val);
     setMode('view');
     setInput('');
   };
 
   const handleClose = () => {
     const val = parseFloat(input);
-    if (!isNaN(val)) {
-      onClose(trade.id, val);
-    }
+    if (!isNaN(val)) onClose(trade.id, val);
     setMode('view');
     setInput('');
   };
@@ -424,6 +428,8 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
   const unrealizedPnL = m.marketPrice != null
     ? (m.marketPrice - trade.entryPrice) * trade.shares
     : null;
+
+  const stopR = m.sdd.r;
 
   return (
     <Card $isRiskFree={m.isRiskFree}>
@@ -453,41 +459,28 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
         </HeaderRight>
       </Header>
 
-      {/* Metrics grid — 6 cells (3×2) */}
-      <MetricsGrid>
-        <MetricCell>
-          <MetricLabel>{t('entry')}</MetricLabel>
-          <MetricValue>{formatCurrency(trade.entryPrice, cur, currency)}</MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>{t('shares')}</MetricLabel>
-          <MetricValue>{trade.shares}</MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>{t('allocated')}</MetricLabel>
-          <MetricValue>{formatCurrency(m.amtAllocated, cur, currency)}</MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>%C</MetricLabel>
-          <MetricValue>{m.pctAllocated.toFixed(1)}%</MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>{t('ptnSizing')}</MetricLabel>
-          <MetricValue>
-            {m.ptnSizing >= 1
-              ? `${m.ptnSizing.toFixed(2)} FP`
-              : `${m.ptnSizing.toFixed(2)} HP`}
-          </MetricValue>
-        </MetricCell>
-        <MetricCell>
-          <MetricLabel>{t('currentStop')}</MetricLabel>
-          <MetricValue>{formatCurrency(trade.currentStopLoss, cur, currency)}</MetricValue>
-        </MetricCell>
-      </MetricsGrid>
+      {/* Facts: entry · shares · allocated · sizing */}
+      <FactsLine>
+        <span><FactLbl>{t('entry')}</FactLbl>{formatCurrency(trade.entryPrice, cur, currency)}</span>
+        <Sep>·</Sep>
+        <span>{trade.shares} {t('shares')}</span>
+        <Sep>·</Sep>
+        <span><FactLbl>{t('allocated')}</FactLbl>{formatCurrency(m.amtAllocated, cur, currency)} ({m.pctAllocated.toFixed(1)}%)</span>
+        <Sep>·</Sep>
+        <span>{m.ptnSizing >= 1 ? `${m.ptnSizing.toFixed(2)} FP` : `${m.ptnSizing.toFixed(2)} HP`}</span>
+      </FactsLine>
 
-      {/* Risk row: SDD / WDD / MDD */}
-      <RiskSection>
-        <RiskLabel>{t('risk')}</RiskLabel>
+      {/* Risk strip: stop + R prominent, then SDD / WDD / MDD */}
+      <RiskBox>
+        <StopRow>
+          <StopInfo>
+            <StopLbl>{t('currentStop')}</StopLbl>
+            <StopVal>{formatCurrency(trade.currentStopLoss, cur, currency)}</StopVal>
+          </StopInfo>
+          <RBadge $positive={stopR >= 0}>
+            {stopR >= 0 ? '+' : ''}{stopR.toFixed(2)}R
+          </RBadge>
+        </StopRow>
         <RiskGrid>
           <RiskCell>
             <RiskCellHead>
@@ -511,19 +504,15 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
             <RiskCellValue>{formatRiskTriple(m.mdd, cur)}</RiskCellValue>
           </RiskCell>
         </RiskGrid>
-      </RiskSection>
+      </RiskBox>
 
-      {/* → Risk Free progress bar (only when not yet risk-free) */}
+      {/* → Risk Free progress (only when not yet risk-free) */}
       {!m.isRiskFree && (
-        <ProgressSection>
-          <ProgressHeader>
-            <span>{t('toRiskFree')}</span>
-            <span>{rfProgress.toFixed(0)}%</span>
-          </ProgressHeader>
-          <ProgressTrack>
-            <ProgressFill $width={rfProgress} />
-          </ProgressTrack>
-        </ProgressSection>
+        <Progress>
+          <span>→ {t('toRiskFree')}</span>
+          <ProgTrack><ProgFill $width={rfProgress} /></ProgTrack>
+          <span>{rfProgress.toFixed(0)}%</span>
+        </Progress>
       )}
 
       {/* Actions */}
@@ -565,19 +554,9 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
             >
               📈 {t('updateStop')}
             </ActionBtn>
-            <ActionBtn
-              onClick={() => setMode('close')}
-            >
-              🏁 {t('close')}
-            </ActionBtn>
-            <ActionBtn
-              onClick={() => setChartOpen(true)}
-            >
-              {t('chart')}
-            </ActionBtn>
-            <IconBtn onClick={() => onDelete(trade.id)} title={t('delete')}>
-              🗑️
-            </IconBtn>
+            <ActionBtn onClick={() => setMode('close')}>🏁 {t('close')}</ActionBtn>
+            <ActionBtn onClick={() => setChartOpen(true)}>{t('chart')}</ActionBtn>
+            <IconBtn onClick={() => onDelete(trade.id)} title={t('delete')}>🗑️</IconBtn>
           </>
         )}
       </ActionsRow>
