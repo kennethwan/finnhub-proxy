@@ -51,8 +51,8 @@ const Card = styled.div<{ $isRiskFree: boolean }>`
 const HeaderBtn = styled.button`
   width: 100%;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   padding: 12px 14px;
   background: transparent;
   border: none;
@@ -60,6 +60,12 @@ const HeaderBtn = styled.button`
   text-align: left;
   font-family: inherit;
   color: inherit;
+`;
+
+const TopRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
 `;
 
 const HLeft = styled.div`
@@ -200,7 +206,6 @@ const Sep = styled.span`
 `;
 
 const RiskGrid = styled.div`
-  margin-top: 10px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 1px;
@@ -433,54 +438,54 @@ export default function TradeCard({ trade, onUpdateStop, onClose, onDelete }: Tr
 
   return (
     <Card $isRiskFree={m.isRiskFree}>
-      {/* Collapsed header — always shows price, P/L (with R), current stop */}
+      {/* Collapsed header — always shows price, P/L (with R), current stop + facts */}
       <HeaderBtn type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
-        <HLeft>
-          <TopLine>
-            <Symbol>{trade.symbol}</Symbol>
-            <StatusChip $riskFree={m.isRiskFree}>
-              {m.isRiskFree ? `✅ ${t('status.riskFree')}` : `⚠️ ${t('status.atRisk')}`}
-            </StatusChip>
-            <DaysLabel>{m.days} {t('days')}</DaysLabel>
-          </TopLine>
-          <StopLine>
-            <StopLbl>{t('currentStop')}</StopLbl>
-            {formatCurrency(trade.currentStopLoss, cur, currency)}
-          </StopLine>
-        </HLeft>
+        <TopRow>
+          <HLeft>
+            <TopLine>
+              <Symbol>{trade.symbol}</Symbol>
+              <StatusChip $riskFree={m.isRiskFree}>
+                {m.isRiskFree ? `✅ ${t('status.riskFree')}` : `⚠️ ${t('status.atRisk')}`}
+              </StatusChip>
+              <DaysLabel>{m.days} {t('days')}</DaysLabel>
+            </TopLine>
+            <StopLine>
+              <StopLbl>{t('currentStop')}</StopLbl>
+              {formatCurrency(trade.currentStopLoss, cur, currency)}
+            </StopLine>
+          </HLeft>
 
-        <HRight>
-          {m.marketPrice != null ? (
-            <>
-              <CurrentPrice>{formatCurrency(m.marketPrice, cur, currency)}</CurrentPrice>
-              <PLLine $positive={(unrealizedPnL ?? 0) >= 0}>
-                {unrealizedPnL != null && (unrealizedPnL >= 0 ? '+' : '')}
-                {unrealizedPnL != null ? formatCurrency(unrealizedPnL, cur, currency) : '—'}
-                {m.changePct != null && ` · ${formatPercent(m.changePct)}`}
-                {m.r != null && ` · ${fmtR(m.r)}`}
-              </PLLine>
-            </>
-          ) : (
-            <NoQuote>{t('noQuote')}</NoQuote>
-          )}
-        </HRight>
+          <HRight>
+            {m.marketPrice != null ? (
+              <>
+                <CurrentPrice>{formatCurrency(m.marketPrice, cur, currency)}</CurrentPrice>
+                <PLLine $positive={(unrealizedPnL ?? 0) >= 0}>
+                  {unrealizedPnL != null && (unrealizedPnL >= 0 ? '+' : '')}
+                  {unrealizedPnL != null ? formatCurrency(unrealizedPnL, cur, currency) : '—'}
+                  {m.changePct != null && ` · ${formatPercent(m.changePct)}`}
+                  {m.r != null && ` · ${fmtR(m.r)}`}
+                </PLLine>
+              </>
+            ) : (
+              <NoQuote>{t('noQuote')}</NoQuote>
+            )}
+          </HRight>
 
-        <Chevron $open={expanded}><ChevronDown size={18} /></Chevron>
+          <Chevron $open={expanded}><ChevronDown size={18} /></Chevron>
+        </TopRow>
+
+        <FactsLine>
+          <span><FactLbl>{t('entry')}</FactLbl>{formatCurrency(trade.entryPrice, cur, currency)}</span>
+          <Sep>·</Sep>
+          <span>{trade.shares} {t('shares')}</span>
+          <Sep>·</Sep>
+          <span><FactLbl>{t('allocated')}</FactLbl>{formatCurrency(m.amtAllocated, cur, currency)} ({m.pctAllocated.toFixed(1)}%)</span>
+        </FactsLine>
       </HeaderBtn>
 
       {/* Expanded detail */}
       {expanded && (
         <Detail>
-          <FactsLine>
-            <span><FactLbl>{t('entry')}</FactLbl>{formatCurrency(trade.entryPrice, cur, currency)}</span>
-            <Sep>·</Sep>
-            <span>{trade.shares} {t('shares')}</span>
-            <Sep>·</Sep>
-            <span><FactLbl>{t('allocated')}</FactLbl>{formatCurrency(m.amtAllocated, cur, currency)} ({m.pctAllocated.toFixed(1)}%)</span>
-            <Sep>·</Sep>
-            <span>{m.ptnSizing >= 1 ? `${m.ptnSizing.toFixed(2)} FP` : `${m.ptnSizing.toFixed(2)} HP`}</span>
-          </FactsLine>
-
           <RiskGrid>
             <RiskCell>
               <RiskCellHead>
