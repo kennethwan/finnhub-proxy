@@ -98,7 +98,8 @@ export interface PortfolioOpts {
 }
 export interface PortfolioStats {
   capital: number; unrealized: number; realized: number; totalPL: number; nav: number;
-  pctInvested: number; numStock: number; osFp: number; sdd: number; mdd: number; hasLiveUnrealized: boolean;
+  pctInvested: number; numStock: number; osFp: number;
+  sdd: number; sddPct: number; mdd: number; mddPct: number; hasLiveUnrealized: boolean;
 }
 
 export function portfolioStats(trades: Trade[], opts: PortfolioOpts): PortfolioStats {
@@ -127,13 +128,16 @@ export function portfolioStats(trades: Trade[], opts: PortfolioOpts): PortfolioS
 
   const totalPL = unrealized + realized;
   const nav = capitalDisplay + totalPL;
+  const mddUsd = sddUsd - unrealized;
   return {
     capital: capitalDisplay, unrealized, realized, totalPL, nav,
     pctInvested: nav !== 0 ? (invested / nav) * 100 : 0,
     numStock: new Set(open.map((t) => t.symbol)).size,
     osFp: oneFp !== 0 ? osFpRisk / oneFp : 0,
     sdd: sddUsd,
-    mdd: sddUsd - unrealized,
+    sddPct: nav !== 0 ? (sddUsd / nav) * 100 : 0,
+    mdd: mddUsd,
+    mddPct: nav !== 0 ? (mddUsd / nav) * 100 : 0,
     hasLiveUnrealized,
   };
 }

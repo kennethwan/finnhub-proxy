@@ -70,6 +70,9 @@ describe('portfolioStats', () => {
     expect(s.osFp).toBeCloseTo(1, 6);
     expect(s.sdd).toBeCloseTo(-640, 2);
     expect(s.mdd).toBeCloseTo(-640 - 18968.32, 2);
+    // drawdowns as % of NAV (the 3-5% portfolio rule is measured against NAV)
+    expect(s.sddPct).toBeCloseTo((-640 / 146968.32) * 100, 4);
+    expect(s.mddPct).toBeCloseTo(((-640 - 18968.32) / 146968.32) * 100, 4);
   });
   it('converts osFp risk to display currency for .HK symbols', () => {
     const hk: Trade = {

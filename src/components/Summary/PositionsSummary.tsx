@@ -41,6 +41,10 @@ export default function PositionsSummary() {
     display: currency,
   });
 
+  // Max-drawdown heat vs the common "keep MDD within 3-5% of the portfolio" rule.
+  const absMdd = Math.abs(s.mddPct);
+  const mddBand: 'ok' | 'warn' | 'danger' = absMdd > 5 ? 'danger' : absMdd > 3 ? 'warn' : 'ok';
+
   return (
     <Grid>
       {/* Row 1: NAV */}
@@ -89,12 +93,16 @@ export default function PositionsSummary() {
         value={formatCurrency(s.sdd, currency, currency)}
         tone={s.sdd < 0 ? 'neg' : 'pos'}
         info={ti('sdd')}
+        sub={`${s.sddPct.toFixed(2)}% NAV`}
+        subTone="muted"
       />
       <StatTile
         label={t('mdd')}
         value={formatCurrency(s.mdd, currency, currency)}
         tone={s.mdd < 0 ? 'neg' : 'pos'}
         info={ti('mdd')}
+        sub={`${s.mddPct.toFixed(2)}% NAV`}
+        subTone={mddBand}
       />
     </Grid>
   );
